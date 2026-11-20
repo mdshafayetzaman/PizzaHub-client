@@ -2,23 +2,54 @@
 
 import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 
 import AuthToggle from './auth-toggle'
+import { signIn } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
 export default function SignInForm() {
-  const [showPassword, setShowPassword] = useState(false)
+  const router = useRouter()
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const formData = new FormData(event.currentTarget)
-    const values = Object.fromEntries(formData.entries())
+    setIsLoading(true)
+    setErrorMessage('')
 
-    console.log(values)
+    const formData = new FormData(event.currentTarget)
+
+    const email = String(formData.get('email'))
+    const password = String(formData.get('password'))
+    const rememberMe = formData.get('rememberMe') === 'on'
+
+    try {
+      const { error } = await signIn.email({
+        email,
+        password,
+        rememberMe,
+        callbackURL: '/',
+      })
+
+      if (error) {
+        setErrorMessage(error.message || 'Invalid email or password')
+        return
+      }
+
+      router.push('/')
+      router.refresh()
+    } catch {
+      setErrorMessage('Something went wrong. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -114,15 +145,25 @@ export default function SignInForm() {
           </Link>
         </div>
 
+        {errorMessage && (
+          <p className="text-sm text-red-400" role="alert">
+            {errorMessage}
+          </p>
+        )}
+
         <Button
           type="submit"
+          disabled={isLoading}
           className="group h-12 w-full rounded-xl bg-orange-500 text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/40"
         >
-          Sign in
-          <ArrowRight
-            className="size-4 transition-transform duration-300 group-hover:translate-x-1"
-            aria-hidden
-          />
+          {isLoading ? 'Signing in...' : 'Sign in'}
+
+          {!isLoading && (
+            <ArrowRight
+              className="size-4 transition-transform duration-300 group-hover:translate-x-1"
+              aria-hidden
+            />
+          )}
         </Button>
       </form>
 
