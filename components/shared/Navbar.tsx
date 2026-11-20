@@ -69,7 +69,7 @@ export default function Navbar() {
             </Link>
 
             <Link
-              href="/login"
+              href="/sign-in"
               className="text-sm font-semibold text-neutral-300 transition hover:text-orange-500"
             >
               Sign In
@@ -113,7 +113,7 @@ export default function Navbar() {
                 variant="outline"
                 className="h-12 flex-1 rounded-xl border-neutral-700 bg-transparent text-white hover:bg-neutral-800"
               >
-                <Link href="/login" onClick={() => setIsOpen(false)}>
+                <Link href="/sign-in" onClick={() => setIsOpen(false)}>
                   Sign In
                 </Link>
               </Button>
