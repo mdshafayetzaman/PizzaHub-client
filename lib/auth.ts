@@ -7,10 +7,20 @@ const client = new MongoClient(process.env.MONGO_DB_URL as string)
 const db = client.db('pizza-hut')
 
 export const auth = betterAuth({
-  baseURL:process.env.BETTER_AUTH_URL,
+  baseURL: process.env.BETTER_AUTH_URL,
   database: mongodbAdapter(db, {
     client,
   }),
+  user: {
+    additionalFields: {
+      role: {
+        type: ['customer', 'vendor', 'admin'],
+        required: true,
+        defaultValue: 'customer',
+        input: true,
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },

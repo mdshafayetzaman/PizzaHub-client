@@ -10,6 +10,8 @@ import {
   ImageIcon,
   LockKeyhole,
   Mail,
+  ShieldCheck,
+  Store,
   User,
 } from 'lucide-react'
 
@@ -18,6 +20,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { signUp } from '@/lib/auth-client'
+
+const roles = [
+  { value: 'customer', label: 'Customer', icon: User },
+  { value: 'vendor', label: 'Vendor', icon: Store },
+  { value: 'admin', label: 'Admin', icon: ShieldCheck },
+] as const
 
 export default function SignUpForm() {
   const router = useRouter()
@@ -40,6 +48,10 @@ export default function SignUpForm() {
       return
     }
 
+    const roleValue = String(data.role || 'customer')
+    const role: 'customer' | 'vendor' | 'admin' =
+      roleValue === 'vendor' || roleValue === 'admin' ? roleValue : 'customer'
+
     try {
       setLoading(true)
 
@@ -47,6 +59,7 @@ export default function SignUpForm() {
         name: String(data.name),
         email: String(data.email),
         password: String(data.password),
+        role,
         image:
           typeof data.imageUrl === 'string' && data.imageUrl
             ? data.imageUrl
@@ -108,6 +121,40 @@ export default function SignUpForm() {
             />
           </div>
         </div>
+
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-neutral-300">
+            Account type
+          </legend>
+
+          <div className="grid grid-cols-3 gap-2">
+            {roles.map((role) => {
+              const Icon = role.icon
+
+              return (
+                <label key={role.value} className="cursor-pointer">
+                  <input
+                    type="radio"
+                    name="role"
+                    value={role.value}
+                    defaultChecked={role.value === 'customer'}
+                    required
+                    className="peer sr-only"
+                  />
+
+                  <span className="flex flex-col items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.04] px-2 py-3 text-xs font-semibold text-neutral-400 transition-all duration-200 hover:border-white/20 hover:bg-white/[0.06] peer-checked:border-orange-500/60 peer-checked:bg-orange-500/10 peer-checked:text-orange-400 peer-checked:shadow-lg peer-checked:shadow-orange-500/10 peer-focus-visible:ring-2 peer-focus-visible:ring-orange-500/40">
+                    <Icon className="size-4" aria-hidden />
+                    {role.label}
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+
+          <p className="text-[11px] text-neutral-500">
+            Choose how you&apos;ll use PizzaHub. You can update this later.
+          </p>
+        </fieldset>
 
         <div className="space-y-2">
           <Label htmlFor="sign-up-image" className="text-neutral-300">
