@@ -1,13 +1,13 @@
-"use client"
+'use client'
 
-import { useState, type FormEvent } from "react"
-import Link from "next/link"
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react"
+import { useState, type FormEvent } from 'react'
+import Link from 'next/link'
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
 
-import AuthToggle from "@/components/auth/auth-toggle"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import AuthToggle from './auth-toggle'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false)
@@ -18,10 +18,7 @@ export default function SignInForm() {
     const formData = new FormData(event.currentTarget)
     const values = Object.fromEntries(formData.entries())
 
-    console.log("[PizzaHub] Sign in form data:", values)
-
-    // TODO: connect better-auth when ready, e.g.
-    // await authClient.signIn.email({ email, password })
+    console.log(values)
   }
 
   return (
@@ -32,9 +29,10 @@ export default function SignInForm() {
         <h1 className="text-3xl font-black tracking-[-0.03em] sm:text-4xl">
           Welcome back
         </h1>
+
         <p className="mt-3 text-sm leading-6 text-neutral-400">
-          Sign in to reorder your favourites, track deliveries and pick up
-          where you left off.
+          Sign in to reorder your favourites, track deliveries and pick up where
+          you left off.
         </p>
       </div>
 
@@ -43,11 +41,13 @@ export default function SignInForm() {
           <Label htmlFor="sign-in-email" className="text-neutral-300">
             Email address
           </Label>
+
           <div className="relative">
             <Mail
               aria-hidden
               className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-neutral-500"
             />
+
             <Input
               id="sign-in-email"
               name="email"
@@ -64,24 +64,27 @@ export default function SignInForm() {
           <Label htmlFor="sign-in-password" className="text-neutral-300">
             Password
           </Label>
+
           <div className="relative">
             <LockKeyhole
               aria-hidden
               className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-neutral-500"
             />
+
             <Input
               id="sign-in-password"
               name="password"
-              type={showPassword ? "text" : "password"}
+              type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               placeholder="Enter your password"
               required
               className="h-12 rounded-xl border-white/10 bg-white/[0.04] pl-11 pr-12 text-white placeholder:text-neutral-600 focus-visible:border-orange-500/60 focus-visible:ring-orange-500/20"
             />
+
             <button
               type="button"
               onClick={() => setShowPassword((visible) => !visible)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
               className="absolute right-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-neutral-500 transition hover:bg-white/5 hover:text-white"
             >
               {showPassword ? (
@@ -124,7 +127,7 @@ export default function SignInForm() {
       </form>
 
       <p className="mt-8 text-center text-sm text-neutral-500">
-        New to PizzaHub?{" "}
+        New to PizzaHub?{' '}
         <Link
           href="/sign-up"
           className="font-semibold text-orange-400 transition hover:text-orange-300"
