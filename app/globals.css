@@ -7,7 +7,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -125,6 +125,48 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    font-family:
+      var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+      "Segoe UI", sans-serif;
+  }
+}
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes hero-float-reverse {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(10px);
+  }
+}
+
+@layer utilities {
+  .animate-hero-float {
+    animation: hero-float 6s ease-in-out infinite;
+  }
+  .animate-hero-float-reverse {
+    animation: hero-float-reverse 7s ease-in-out infinite;
+  }
+  .animate-hero-spin {
+    animation: spin 48s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-float,
+  .animate-hero-float-reverse,
+  .animate-hero-spin {
+    animation: none;
   }
 }

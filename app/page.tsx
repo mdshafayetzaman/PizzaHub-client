@@ -1,12 +1,11 @@
-import React from 'react';
+import HeroSection from "@/components/shared/hero-section";
 
 const HomePage = () => {
   return (
-    <div>
-    <h1>homne</h1>
-    </div>
+    <main>
+      <HeroSection />
+    </main>
   );
 };
 
 export default HomePage;
-
