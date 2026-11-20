@@ -2,8 +2,18 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Pizza, ShoppingBag, Menu, X, ArrowUpRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import {
+  Pizza,
+  ShoppingBag,
+  Menu,
+  X,
+  ArrowUpRight,
+  User,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import SignOutButton from '@/components/shared/sign-out-button'
+import { useSession } from '@/lib/auth-client'
 
 const navLinks = [
   { name: 'Home', href: '/' },
@@ -13,7 +23,24 @@ const navLinks = [
 ]
 
 export default function Navbar() {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
+  const { data: session, isPending } = useSession()
+
+  const user = session?.user
+
+  const handleOrder = () => {
+    setIsOpen(false)
+
+    // Not authenticated → send the user to the sign-in page.
+    if (!user) {
+      router.push('/sign-in')
+      return
+    }
+
+    // Authenticated → continue to the ordering/menu page.
+    router.push('/menu')
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-800/70 bg-[#11100F]/95 text-white backdrop-blur-xl">
@@ -46,7 +73,6 @@ export default function Navbar() {
                 }`}
               >
                 {link.name}
-
                 <span className="absolute -bottom-1 left-0 h-[2px] w-0 rounded-full bg-orange-500 transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
@@ -62,24 +88,62 @@ export default function Navbar() {
                 size={20}
                 className="text-neutral-300 transition group-hover:text-orange-500"
               />
-
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
                 0
               </span>
             </Link>
 
-            <Link
-              href="/sign-in"
-              className="text-sm font-semibold text-neutral-300 transition hover:text-orange-500"
-            >
-              Sign In
-            </Link>
+            {isPending ? (
+              <div
+                aria-hidden
+                className="h-11 w-40 animate-pulse rounded-full bg-neutral-800/60"
+              />
+            ) : user ? (
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 rounded-full border border-neutral-800 px-3 py-2 transition hover:border-orange-500"
+                >
+                  {user.image ? (
+                    <img
+                      src={user.image}
+                      alt="Profile"
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500/15 text-orange-500">
+                      <User size={18} />
+                    </div>
+                  )}
 
-            <Button className="h-12 rounded-full bg-orange-500 px-6 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-orange-600">
-              <Link href="/menu" className="flex items-center">
+                  <span className="max-w-28 truncate text-sm font-semibold text-white">
+                    {user.name}
+                  </span>
+                </Link>
+
+                <SignOutButton
+                  variant="outline"
+                  className="h-11 gap-2 rounded-full border-neutral-700 bg-transparent px-4 text-neutral-300 hover:border-orange-500 hover:bg-orange-500/10 hover:text-orange-500"
+                />
+              </div>
+            ) : (
+              <Link
+                href="/sign-in"
+                className="text-sm font-semibold text-neutral-300 transition hover:text-orange-500"
+              >
+                Sign In
+              </Link>
+            )}
+
+            <Button
+              onClick={handleOrder}
+              disabled={isPending}
+              className="h-12 rounded-full bg-orange-500 px-6 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-orange-600"
+            >
+              <span className="flex items-center">
                 Order Now
                 <ArrowUpRight size={17} className="ml-2" />
-              </Link>
+              </span>
             </Button>
           </div>
 
@@ -109,22 +173,79 @@ export default function Navbar() {
             </nav>
 
             <div className="mt-5 flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="h-12 flex-1 rounded-xl border-neutral-700 bg-transparent text-white hover:bg-neutral-800"
-              >
-                <Link href="/sign-in" onClick={() => setIsOpen(false)}>
-                  Sign In
-                </Link>
-              </Button>
+              {isPending ? (
+                <div
+                  aria-hidden
+                  className="h-14 w-full animate-pulse rounded-xl bg-neutral-800/60"
+                />
+              ) : user ? (
+                <>
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsOpen(false)}
+                    className="flex flex-1 items-center gap-3 rounded-xl border border-neutral-800 p-3"
+                  >
+                    {user.image ? (
+                      <img
+                        src={user.image}
+                        alt="Profile"
+                        className="h-10 w-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/15 text-orange-500">
+                        <User size={20} />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-white">
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-neutral-500">View Profile</p>
+                    </div>
+                  </Link>
 
-              <Button className="h-12 flex-1 rounded-xl bg-orange-500 font-bold text-white hover:bg-orange-600">
-                <Link href="/menu" onClick={() => setIsOpen(false)}>
-                  Order Now
-                  <ArrowUpRight size={17} className="ml-1" />
-                </Link>
-              </Button>
+                  <SignOutButton
+                    iconOnly
+                    variant="outline"
+                    className="h-12 w-12 shrink-0 rounded-xl border-neutral-700 bg-transparent text-white hover:border-orange-500 hover:bg-neutral-800"
+                    onSignedOut={() => setIsOpen(false)}
+                  />
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    className="h-12 flex-1 rounded-xl border-neutral-700 bg-transparent text-white hover:bg-neutral-800"
+                  >
+                    <Link href="/sign-in" onClick={() => setIsOpen(false)}>
+                      Sign In
+                    </Link>
+                  </Button>
+
+                  <Button
+                    onClick={handleOrder}
+                    className="h-12 flex-1 rounded-xl bg-orange-500 font-bold text-white hover:bg-orange-600"
+                  >
+                    <span className="flex items-center">
+                      Order Now
+                      <ArrowUpRight size={17} className="ml-1 inline" />
+                    </span>
+                  </Button>
+                </>
+              )}
             </div>
+
+            {!isPending && user && (
+              <Button
+                onClick={handleOrder}
+                className="mt-3 h-12 w-full rounded-xl bg-orange-500 font-bold text-white hover:bg-orange-600"
+              >
+                <span className="flex items-center">
+                  Order Now
+                  <ArrowUpRight size={17} className="ml-1 inline" />
+                </span>
+              </Button>
+            )}
 
             <Link
               href="/cart"
