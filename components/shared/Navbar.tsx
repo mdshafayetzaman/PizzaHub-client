@@ -3,24 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  Pizza,
-  ShoppingBag,
-  Menu,
-  X,
-  ArrowUpRight,
-  User,
-} from 'lucide-react'
+import { Pizza, ShoppingBag, Menu, X, ArrowUpRight, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import SignOutButton from '@/components/shared/sign-out-button'
 import { useSession } from '@/lib/auth-client'
-
-const navLinks = [
-  { name: 'Home', href: '/' },
-  { name: 'Our Menu', href: '/menu' },
-  { name: 'About Us', href: '/about' },
-  { name: 'Contact', href: '/contact' },
-]
 
 export default function Navbar() {
   const router = useRouter()
@@ -28,6 +14,13 @@ export default function Navbar() {
   const { data: session, isPending } = useSession()
 
   const user = session?.user
+  const navLinks = [
+    { name: 'Home', href: '/' },
+    { name: 'Our Menu', href: '/menu' },
+    ...(user
+      ? [{ name: 'Dashboard', href: `/dashboard/${user.role}` as const }]
+      : []),
+  ]
 
   const handleOrder = () => {
     setIsOpen(false)

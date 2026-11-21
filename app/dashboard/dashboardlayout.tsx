@@ -5,15 +5,18 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import {
+  ChevronRight,
+  ClipboardList,
   Flame,
   Home,
   LayoutDashboard,
-  ChevronRight,
   Pizza,
+  PlusCircle,
+  Receipt,
   ShieldCheck,
   ShoppingBag,
   Sparkles,
-  Store,
+  UserCog,
   Users,
 } from 'lucide-react'
 
@@ -50,62 +53,118 @@ type NavGroup = {
   items: NavItem[]
 }
 
+const SITE_GROUP: NavGroup = {
+  label: 'Site',
+  items: [
+    { label: 'Home', href: '/', icon: Home },
+    { label: 'Browse menu', href: '/menu', icon: Pizza },
+  ],
+}
+
 /**
- * Role-aware navigation: each of the three PizzaHub roles gets its own
- * section, admins see every dashboard.
+ * Role-aware navigation: each of the three PizzaHub roles gets the pages that
+ * belong to its workspace. Admins manage the whole platform.
  */
 function buildNav(role: DashboardRole): NavGroup[] {
-  const dashboard: NavItem = {
-    label: 'Overview',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  }
-  const site: NavGroup = {
-    label: 'Site',
-    items: [{ label: 'Home', href: '/', icon: Home }],
-  }
-
   if (role === 'admin') {
     return [
-      { label: 'Dashboard', items: [dashboard] },
       {
-        label: 'Management',
+        label: 'Dashboard',
         items: [
-          { label: 'Admin Panel', href: '/dashboard/admin', icon: ShieldCheck },
-          { label: 'Customers', href: '/dashboard/customers', icon: Users },
-          { label: 'Vendors', href: '/dashboard/vendor', icon: Store },
+          {
+            label: 'Overview',
+            href: '/dashboard/admin',
+            icon: LayoutDashboard,
+          },
+          {
+            label: 'Manage users',
+            href: '/dashboard/admin/users',
+            icon: Users,
+          },
+          {
+            label: 'Manage menu items',
+            href: '/dashboard/admin/menu',
+            icon: Pizza,
+          },
+          {
+            label: 'Transactions',
+            href: '/dashboard/admin/transactions',
+            icon: Receipt,
+          },
+          {
+            label: 'Profile settings',
+            href: '/dashboard/admin/profile',
+            icon: UserCog,
+          },
         ],
       },
-      site,
+      SITE_GROUP,
     ]
   }
 
   if (role === 'vendor') {
     return [
-      { label: 'Dashboard', items: [dashboard] },
       {
-        label: 'My Kitchen',
+        label: 'Dashboard',
         items: [
-          { label: 'My Store', href: '/dashboard/vendor', icon: Store },
+          {
+            label: 'Overview',
+            href: '/dashboard/vendor',
+            icon: LayoutDashboard,
+          },
+          {
+            label: 'My menu items',
+            href: '/dashboard/vendor/menu',
+            icon: Pizza,
+          },
+          {
+            label: 'Add menu item',
+            href: '/dashboard/vendor/menu/new',
+            icon: PlusCircle,
+          },
+          {
+            label: 'Customer orders',
+            href: '/dashboard/vendor/orders',
+            icon: ClipboardList,
+          },
+          {
+            label: 'Subscription',
+            href: '/dashboard/vendor/subscription',
+            icon: Sparkles,
+          },
+          {
+            label: 'Profile settings',
+            href: '/dashboard/vendor/profile',
+            icon: UserCog,
+          },
         ],
       },
-      site,
+      SITE_GROUP,
     ]
   }
 
   return [
-    { label: 'Dashboard', items: [dashboard] },
     {
-      label: 'My Kitchen',
+      label: 'Dashboard',
       items: [
         {
-          label: 'My Orders',
+          label: 'Overview',
           href: '/dashboard/customers',
+          icon: LayoutDashboard,
+        },
+        {
+          label: 'My orders',
+          href: '/dashboard/customers/orders',
           icon: ShoppingBag,
+        },
+        {
+          label: 'Profile settings',
+          href: '/dashboard/customers/profile',
+          icon: UserCog,
         },
       ],
     },
-    site,
+    SITE_GROUP,
   ]
 }
 
@@ -186,7 +245,8 @@ function DashboardChrome({ user, children }: DashboardShellProps) {
   const roleMeta = ROLE_META[user.role]
   const activeItem = groups
     .flatMap((group) => group.items)
-    .find((item) => isCurrent(pathname, item.href))
+    .filter((item) => isCurrent(pathname, item.href))
+    .sort((a, b) => b.href.length - a.href.length)[0]
   const title = activeItem?.label ?? 'Dashboard'
   const collapsed = state === 'collapsed'
 

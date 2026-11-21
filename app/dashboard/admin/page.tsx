@@ -1,190 +1,126 @@
-import { Suspense } from 'react'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import {
-  ArrowRight,
-  Bell,
-  PieChart,
-  ShieldCheck,
+  ClipboardList,
+  Receipt,
   Store,
   TrendingUp,
   Users,
 } from 'lucide-react'
 
-import {
-  AccessDenied,
-  DashboardHeading,
-  Panel,
-  StatCard,
-} from '@/components/dashboard/widgets'
-import { getCurrentUser } from '@/lib/session'
+import PageHeader from '@/components/dashboard/page-header'
+import Panel from '@/components/dashboard/panel'
+import StatCard from '@/components/dashboard/stat-card'
+import TransactionsTable from '@/components/dashboard/transactions-table'
+import { Button } from '@/components/ui/button'
+import { ORDERS, TRANSACTIONS, USERS, formatPrice } from '@/lib/data'
 
-const recentActivity = [
-  {
-    id: '1',
-    title: 'New vendor application — Firestone Pizzeria',
-    meta: 'Pending review · 12 min ago',
-    status: 'Review',
-  },
-  {
-    id: '2',
-    title: 'Customer role upgraded — a.johnson@example.com',
-    meta: 'Manual change · 1 hour ago',
-    status: 'Done',
-  },
-  {
-    id: '3',
-    title: 'Menu flagged — “Double Pepperoni” (Vendor #18)',
-    meta: 'Auto-moderation · 3 hours ago',
-    status: 'Flagged',
-  },
-]
-
-export default function AdminDashboardPage() {
-  return (
-    <Suspense fallback={<AdminDashboardFallback />}>
-      <AdminDashboardContent />
-    </Suspense>
+export default function AdminOverviewPage() {
+  const revenue = TRANSACTIONS.filter((txn) => txn.status === 'paid').reduce(
+    (total, txn) => total + txn.amount,
+    0
   )
-}
-
-async function AdminDashboardContent() {
-  const user = await getCurrentUser()
-
-  if (!user) redirect('/sign-in')
-
-  if (user.role !== 'admin') {
-    return <AccessDenied role={user.role} allowed="Admin" />
-  }
+  const liveOrders = ORDERS.filter(
+    (order) => order.status !== 'delivered' && order.status !== 'cancelled'
+  ).length
 
   return (
-    <div className="space-y-6">
-      <DashboardHeading
-        eyebrow="Admin"
-        title="Admin Panel"
-        description={`Welcome back, ${user.name}. Here's the state of PizzaHub across every customer and vendor.`}
-        role={user.role}
+    <div className="space-y-8">
+      <PageHeader
+        title="Overview"
+        description="The whole PizzaHub platform in one place — users, vendors, orders and money."
+        action={
+          <Button
+            render={<Link href="/dashboard/admin/users" />}
+            className="h-10 gap-2 rounded-xl bg-orange-500 px-4 text-sm font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600"
+          >
+            <Users className="size-4" aria-hidden />
+            Manage users
+          </Button>
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Customers"
-          value="3,204"
-          hint="+128 in the last 7 days"
+          label="Total users"
+          value={String(USERS.length * 42)}
+          hint={`${USERS.length} shown in the demo`}
           icon={Users}
+          accent="sky"
         />
         <StatCard
-          label="Vendors"
-          value="48"
+          label="Active vendors"
+          value={String(USERS.filter((user) => user.role === 'vendor').length * 8)}
           hint="3 awaiting approval"
           icon={Store}
+          accent="violet"
         />
         <StatCard
-          label="Orders today"
-          value="1,284"
-          hint="+12.4% vs yesterday"
+          label="Live orders"
+          value={String(liveOrders)}
+          hint="Across every kitchen"
+          icon={ClipboardList}
+          accent="orange"
+        />
+        <StatCard
+          label="Revenue today"
+          value={formatPrice(revenue)}
+          hint="From settled transactions"
           icon={TrendingUp}
-        />
-        <StatCard
-          label="Revenue"
-          value="$24.8k"
-          hint="Gross, this week"
-          icon={PieChart}
+          accent="emerald"
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Panel
-            title="Recent activity"
-            description="Latest account and moderation events."
-            action={
-              <span className="rounded-full bg-orange-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-400 ring-1 ring-orange-500/30 ring-inset">
-                Demo data
-              </span>
-            }
-          >
-            <ul className="space-y-3">
-              {recentActivity.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-start justify-between gap-4 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-white">
-                      {item.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-neutral-500">
-                      {item.meta}
-                    </p>
-                  </div>
-
-                  <span className="shrink-0 rounded-full bg-white/5 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400 ring-1 ring-white/10 ring-inset">
-                    {item.status}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        </div>
-
+      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
         <Panel
-          title="Quick actions"
-          description="Jump straight to an admin task."
+          title="Recent transactions"
+          description="Latest money movement on the platform"
+          action={
+            <Link
+              href="/dashboard/admin/transactions"
+              className="text-xs font-bold text-orange-400 transition hover:text-orange-300"
+            >
+              View all
+            </Link>
+          }
+          contentClassName="p-0"
         >
-          <div className="space-y-2">
-            {[
-              { label: 'Manage customers', href: '/dashboard/customers' },
-              { label: 'Manage vendors', href: '/dashboard/vendor' },
-              { label: 'Back to site', href: '/' },
-            ].map((action) => (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-semibold text-neutral-300 transition hover:border-orange-500/40 hover:text-orange-400"
-              >
-                {action.label}
-                <ArrowRight className="size-4" aria-hidden />
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-4 flex items-start gap-2 rounded-lg border border-orange-500/20 bg-orange-500/10 px-3 py-2.5 text-[11px] leading-4 text-orange-200">
-            <Bell className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            You have 3 vendor applications waiting for review.
-          </div>
-
-          <div className="mt-3 flex items-center gap-2 text-[11px] text-neutral-500">
-            <ShieldCheck className="size-3.5" aria-hidden />
-            Role checks run on the server for every dashboard route.
-          </div>
+          <TransactionsTable transactions={TRANSACTIONS.slice(0, 5)} />
         </Panel>
-      </div>
-    </div>
-  )
-}
 
-function AdminDashboardFallback() {
-  return (
-    <div className="space-y-6 animate-pulse">
-      <div className="space-y-2">
-        <div className="h-3 w-20 rounded bg-white/10" />
-        <div className="h-8 w-48 rounded bg-white/10" />
-        <div className="h-4 w-80 max-w-full rounded bg-white/10" />
-      </div>
+        <Panel title="Platform shortcuts" contentClassName="space-y-3">
+          {[
+            {
+              label: 'Manage users',
+              href: '/dashboard/admin/users',
+              icon: Users,
+            },
+            {
+              label: 'Manage menu items',
+              href: '/dashboard/admin/menu',
+              icon: Receipt,
+            },
+            {
+              label: 'Transactions',
+              href: '/dashboard/admin/transactions',
+              icon: TrendingUp,
+            },
+          ].map((action) => {
+            const Icon = action.icon
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            key={index}
-            className="h-32 rounded-xl border border-white/10 bg-white/[0.03]"
-          />
-        ))}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="h-72 rounded-xl border border-white/10 bg-white/[0.03] lg:col-span-2" />
-        <div className="h-72 rounded-xl border border-white/10 bg-white/[0.03]" />
+            return (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3.5 text-sm font-semibold text-neutral-200 transition hover:border-orange-500/30 hover:bg-orange-500/5 hover:text-white"
+              >
+                <span className="flex size-9 items-center justify-center rounded-lg bg-orange-500/10 text-orange-400">
+                  <Icon className="size-4" aria-hidden />
+                </span>
+                {action.label}
+              </Link>
+            )
+          })}
+        </Panel>
       </div>
     </div>
   )

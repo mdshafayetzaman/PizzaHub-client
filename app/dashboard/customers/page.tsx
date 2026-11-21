@@ -1,156 +1,138 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import {
-  ArrowRight,
-  ChefHat,
-  Clock,
+  Clock3,
   Heart,
-  Package,
+  MapPin,
+  Pizza,
   ShoppingBag,
-  Star,
-  Truck,
   Wallet,
 } from 'lucide-react'
 
-import {
-  AccessDenied,
-  DashboardHeading,
-  Panel,
-  StatCard,
-} from '@/components/dashboard/widgets'
-import { getCurrentUser } from '@/lib/session'
+import PageHeader from '@/components/dashboard/page-header'
+import Panel from '@/components/dashboard/panel'
+import OrdersTable from '@/components/dashboard/orders-table'
+import StatCard from '@/components/dashboard/stat-card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { formatPrice, MENU_ITEMS, ORDERS } from '@/lib/data'
 
-const orders = [
-  {
-    id: 'PH-4821',
-    title: 'Margherita Classica + Garlic Bread',
-    meta: 'Placed 18 min ago · Out for delivery',
-    status: 'On the way',
-    tone: 'bg-orange-500/15 text-orange-400 ring-orange-500/30',
-  },
-  {
-    id: 'PH-4798',
-    title: 'Double Pepperoni (Large)',
-    meta: 'Yesterday · Delivered',
-    status: 'Delivered',
-    tone: 'bg-emerald-500/15 text-emerald-400 ring-emerald-500/30',
-  },
-  {
-    id: 'PH-4755',
-    title: 'Vegan Supreme + Cola',
-    meta: '3 days ago · Delivered',
-    status: 'Delivered',
-    tone: 'bg-emerald-500/15 text-emerald-400 ring-emerald-500/30',
-  },
-]
-
-export default async function CustomerDashboardPage() {
-  const user = await getCurrentUser()
-
-  if (!user) redirect('/sign-in')
-  if (user.role !== 'customer' && user.role !== 'admin')
-    return <AccessDenied role={user.role} allowed="Customer or Admin" />
+export default function CustomerOverviewPage() {
+  const active = ORDERS.filter(
+    (order) => order.status !== 'delivered' && order.status !== 'cancelled'
+  )
+  const delivered = ORDERS.filter((order) => order.status === 'delivered')
+  const spent = delivered.reduce((total, order) => total + order.total, 0)
+  const favourites = MENU_ITEMS.filter((item) => item.popular).slice(0, 4)
 
   return (
-    <div className="space-y-6">
-      <DashboardHeading
-        eyebrow="Customer"
-        title={`Hey ${user.name.split(' ')[0]}, hungry?`}
-        description="Track your orders, save your favourites and reorder the pies you love in one tap."
-        role={user.role}
+    <div className="space-y-8">
+      <PageHeader
+        title="Welcome back"
+        description="Track live orders, reorder your favourites and keep every slice a tap away."
+        action={
+          <Button
+            render={<Link href="/menu" />}
+            className="h-10 gap-2 rounded-xl bg-orange-500 px-4 text-sm font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600"
+          >
+            <Pizza className="size-4" aria-hidden />
+            Order now
+          </Button>
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Orders"
-          value="36"
-          hint="Lifetime orders"
+          label="Active orders"
+          value={String(active.length)}
+          hint="On their way to you"
           icon={ShoppingBag}
+          accent="orange"
         />
         <StatCard
-          label="In progress"
-          value="1"
-          hint="Out for delivery now"
-          icon={Truck}
+          label="Total spent"
+          value={formatPrice(spent)}
+          hint={`${delivered.length} delivered orders`}
+          icon={Wallet}
+          accent="emerald"
         />
         <StatCard
           label="Favourites"
-          value="8"
-          hint="Saved pizzas"
+          value={String(favourites.length)}
+          hint="Saved for next time"
           icon={Heart}
+          accent="violet"
         />
         <StatCard
-          label="Rewards"
-          value="1,240"
-          hint="Points · 260 to next reward"
-          icon={Star}
+          label="Saved addresses"
+          value="2"
+          hint="Home and office"
+          icon={MapPin}
+          accent="sky"
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Panel
-            title="Recent orders"
-            description="Your latest PizzaHub orders."
-            action={
-              <span className="rounded-full bg-orange-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-400 ring-1 ring-orange-500/30 ring-inset">
-                Demo data
-              </span>
-            }
-          >
-            <ul className="space-y-3">
-              {orders.map((order) => (
-                <li
-                  key={order.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-white">
-                      {order.title}
-                    </p>
-                    <p className="mt-0.5 text-xs text-neutral-500">
-                      {order.id} · {order.meta}
-                    </p>
-                  </div>
+      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+        <Panel
+          title="Active orders"
+          description="Orders that are still on the move"
+          action={
+            <Link
+              href="/dashboard/customers/orders"
+              className="text-xs font-bold text-orange-400 transition hover:text-orange-300"
+            >
+              View all
+            </Link>
+          }
+          contentClassName="p-0"
+        >
+          {active.length > 0 ? (
+            <OrdersTable
+              orders={active.slice(0, 4)}
+              showCustomer={false}
+              linkOrders={false}
+            />
+          ) : (
+            <div className="px-6 py-14 text-center text-sm text-neutral-500">
+              No active orders right now — time for a slice.
+            </div>
+          )}
+        </Panel>
 
-                  <span
-                    className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ring-1 ring-inset ${order.tone}`}
-                  >
-                    {order.status}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Panel>
-        </div>
-
-        <Panel title="Quick actions" description="Reorder in a couple of taps.">
-          <div className="space-y-2">
-            {[
-              { label: 'Order a pizza', href: '/', icon: ChefHat },
-              { label: 'Reorder last order', href: '/', icon: Clock },
-              { label: 'Payment methods', href: '/', icon: Wallet },
-            ].map((action) => (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-3 text-sm font-semibold text-neutral-300 transition hover:border-orange-500/40 hover:text-orange-400"
-              >
-                <span className="flex items-center gap-2">
-                  <action.icon className="size-4" aria-hidden />
-                  {action.label}
-                </span>
-                <ArrowRight className="size-4" aria-hidden />
-              </Link>
-            ))}
-          </div>
-
-          <div className="mt-4 flex items-start gap-2 rounded-lg border border-orange-500/20 bg-orange-500/10 px-3 py-2.5 text-[11px] leading-4 text-orange-200">
-            <Package className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            Free delivery on your next order over $25.
-          </div>
+        <Panel
+          title="Your favourites"
+          description="Tap a slice to reorder"
+          contentClassName="grid gap-3 sm:grid-cols-2"
+        >
+          {favourites.map((item) => (
+            <Link
+              key={item.id}
+              href={`/menu/${item.id}`}
+              className="group rounded-xl border border-white/10 bg-white/[0.02] p-3.5 transition hover:border-orange-500/30 hover:bg-orange-500/5"
+            >
+              <p className="truncate text-xs font-bold text-white group-hover:text-orange-300">
+                {item.name}
+              </p>
+              <p className="mt-1 text-xs font-bold text-orange-400">
+                {formatPrice(item.price)}
+              </p>
+            </Link>
+          ))}
         </Panel>
       </div>
+
+      <Panel
+        title="Need inspiration?"
+        description="Fresh from the stone oven this week"
+      >
+        <div className="flex flex-wrap gap-3">
+          <Badge variant="orange">
+            <Clock3 className="size-3" aria-hidden />
+            Average delivery 28 min
+          </Badge>
+          <Badge variant="emerald">Kitchen open till 11 PM</Badge>
+          <Badge variant="violet">20% off your first pie</Badge>
+        </div>
+      </Panel>
     </div>
   )
 }
