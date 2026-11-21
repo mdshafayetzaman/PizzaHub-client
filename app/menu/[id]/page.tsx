@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft, Clock3, Flame, Star } from 'lucide-react'
@@ -7,7 +7,6 @@ import { ArrowLeft, Clock3, Flame, Star } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import AddToCartForm from '@/components/menu/add-to-cart-form'
 import { formatPrice, getMenuItem, MENU_ITEMS } from '@/lib/data'
-import { getCurrentUser } from '@/lib/session'
 
 export default function ItemDetailsPage({
   params,
@@ -42,12 +41,6 @@ async function ItemDetails({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const user = await getCurrentUser()
-
-  if (!user) {
-    redirect('/sign-in')
-  }
-
   const { id } = await params
   const item = getMenuItem(id)
 

@@ -1,10 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Check, Minus, Plus, ShoppingBag } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { formatPrice } from '@/lib/data'
+import { useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 
 const SIZES = [
@@ -21,11 +23,46 @@ export default function AddToCartForm({
   name: string
   price: number
 }) {
+  const { data: session, isPending } = useSession()
   const [size, setSize] = useState<(typeof SIZES)[number]>(SIZES[0])
   const [quantity, setQuantity] = useState(1)
   const [added, setAdded] = useState(false)
 
   const total = price * size.multiplier * quantity
+
+  if (isPending) {
+    return <div className="h-44 animate-pulse rounded-2xl bg-white/5" />
+  }
+
+  if (!session?.user) {
+    return (
+      <div className="rounded-2xl border border-orange-500/25 bg-orange-500/[0.06] p-5 text-center">
+        <p className="text-sm font-bold text-white">
+          Sign in to order this slice
+        </p>
+        <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-neutral-400">
+          Browsing is free — create an account to add to your cart and check out
+          in seconds.
+        </p>
+
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <Button
+            render={<Link href="/sign-in" />}
+            className="h-10 flex-1 rounded-xl bg-orange-500 text-xs font-bold text-white hover:bg-orange-600"
+          >
+            Sign in
+          </Button>
+          <Button
+            variant="outline"
+            render={<Link href="/sign-up" />}
+            className="h-10 flex-1 rounded-xl border-white/15 bg-transparent text-xs font-semibold text-white hover:bg-white/5"
+          >
+            Create account
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   if (added) {
     return (
