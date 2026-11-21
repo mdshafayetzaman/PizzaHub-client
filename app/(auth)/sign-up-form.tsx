@@ -55,7 +55,7 @@ export default function SignUpForm() {
     try {
       setLoading(true)
 
-      const { data: SignupResponse, error } = await signUp.email({
+      const { error } = await signUp.email({
         name: String(data.name),
         email: String(data.email),
         password: String(data.password),
@@ -64,7 +64,7 @@ export default function SignUpForm() {
           typeof data.imageUrl === 'string' && data.imageUrl
             ? data.imageUrl
             : undefined,
-        callbackURL: '/sign-in',
+        callbackURL: '/',
       })
 
       if (error) {
@@ -72,9 +72,7 @@ export default function SignUpForm() {
         return
       }
 
-      console.log('[PizzaHub] Signup successful:', SignupResponse)
-
-      router.push('/sign-in')
+      router.replace('/')
       router.refresh()
     } catch {
       setErrorMessage('Something went wrong. Please try again.')
