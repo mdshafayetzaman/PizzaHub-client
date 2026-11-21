@@ -16,7 +16,7 @@ export default function Navbar() {
   const user = session?.user
   const navLinks = [
     { name: 'Home', href: '/' },
-    { name: 'Our Menu', href: '/menu' },
+    { name: 'Browse menu', href: '/menu' },
     ...(user
       ? [{ name: 'Dashboard', href: `/dashboard/${user.role}` as const }]
       : []),

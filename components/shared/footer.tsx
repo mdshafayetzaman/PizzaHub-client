@@ -23,9 +23,8 @@ const footerLinks = [
     title: "Explore",
     links: [
       { label: "Home", href: "/" },
-      { label: "Our menu", href: "/menu" },
-      { label: "About us", href: "/about" },
-      { label: "Contact", href: "/contact" },
+      { label: "Browse menu", href: "/menu" },
+      { label: "Dashboard", href: "/dashboard" },
     ],
   },
   {
@@ -33,7 +32,7 @@ const footerLinks = [
     links: [
       { label: "Sign in", href: "/sign-in" },
       { label: "Create account", href: "/sign-up" },
-      { label: "Shopping cart", href: "/cart" },
+      { label: "Profile settings", href: "/profile" },
     ],
   },
 ]
@@ -230,13 +229,13 @@ export default function Footer() {
 
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-neutral-500">
             <Link
-              href="/privacy"
+              href="/sign-in"
               className="transition hover:text-orange-400"
             >
-              Privacy policy
+              Sign in
             </Link>
-            <Link href="/terms" className="transition hover:text-orange-400">
-              Terms of service
+            <Link href="/sign-up" className="transition hover:text-orange-400">
+              Create account
             </Link>
             <span className="inline-flex items-center gap-1.5">
               Made with
