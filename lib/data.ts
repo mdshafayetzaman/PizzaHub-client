@@ -20,6 +20,109 @@ export interface MenuItems {
   description: string
 }
 
+export const VENDOR_MENU_ITEMS: MenuItems[] = [
+  {
+    pizzaName: 'Italian Margherita Pizza',
+    category: 'classic',
+    price: 12.99,
+    preparationTime: '15-20 minutes',
+    availableDate: '2026-11-20',
+    imageUrl: img('1574071318508-1cdbab80d002'),
+    description:
+      'San Marzano tomato, fior di latte mozzarella and fresh basil on a hand-stretched base.',
+  },
+  {
+    pizzaName: 'Double Cheese Burst Pizza',
+    category: 'cheese',
+    price: 14.49,
+    preparationTime: '20-25 minutes',
+    availableDate: '2026-11-21',
+    imageUrl: img('1513104890138-7c749659a591'),
+    description:
+      'Mozzarella, cheddar and parmesan melted into a golden, bubbly cheese crust.',
+  },
+  {
+    pizzaName: 'Chicken Tikka Pizza',
+    category: 'chicken',
+    price: 16.99,
+    preparationTime: '25-30 minutes',
+    availableDate: '2026-11-22',
+    imageUrl: img('1593560708920-61dd98c46a4e'),
+    description:
+      'Tandoori spiced chicken, red onion, capsicum and mozzarella with a mint drizzle.',
+  },
+  {
+    pizzaName: 'Garden Vegetarian Pizza',
+    category: 'vegetarian',
+    price: 13.49,
+    preparationTime: '15-20 minutes',
+    availableDate: '2026-11-19',
+    imageUrl: img('1585238342024-78d387f4a707'),
+    description:
+      'Roasted peppers, courgette, sweetcorn, olives and onion on a crisp thin crust.',
+  },
+  {
+    pizzaName: 'Smoky BBQ Special Pizza',
+    category: 'special',
+    price: 18.99,
+    preparationTime: '25-30 minutes',
+    availableDate: '2026-11-23',
+    imageUrl: img('1565299624946-b28f40a0ae38'),
+    description:
+      'Char-grilled chicken, smoky BBQ sauce, red onion and mozzarella finished with coriander.',
+  },
+  {
+    pizzaName: 'Pepperoni Classica Pizza',
+    category: 'classic',
+    price: 15.99,
+    preparationTime: '20-25 minutes',
+    availableDate: '2026-11-20',
+    imageUrl: img('1595295333158-4742f28fbd85'),
+    description:
+      'Double pepperoni, mozzarella and a drizzle of hot honey over slow-simmered tomato sauce.',
+  },
+  {
+    pizzaName: 'Four Cheese Lover Pizza',
+    category: 'cheese',
+    price: 17.49,
+    preparationTime: '20-25 minutes',
+    availableDate: '2026-11-24',
+    imageUrl: img('1571407970349-bc81e7e96d47'),
+    description:
+      'Mozzarella, gorgonzola, fontina and parmesan with a touch of cream and cracked pepper.',
+  },
+  {
+    pizzaName: 'Peri Peri Chicken Pizza',
+    category: 'chicken',
+    price: 17.99,
+    preparationTime: '25-30 minutes',
+    availableDate: '2026-11-25',
+    imageUrl: img('1569058242253-92a9c755a0ec'),
+    description:
+      'Peri peri chicken, jalapeño, red onion and mozzarella with a fiery chilli oil finish.',
+  },
+  {
+    pizzaName: 'Vegan Margherita Pizza',
+    category: 'vegetarian',
+    price: 13.99,
+    preparationTime: '15-20 minutes',
+    availableDate: '2026-11-21',
+    imageUrl: img('1604382354936-07c5d9983bd3'),
+    description:
+      'Tomato, plant-based mozzarella, basil and garlic oil. Dairy-free and full of flavour.',
+  },
+  {
+    pizzaName: 'Truffle Mushroom Special Pizza',
+    category: 'special',
+    price: 19.99,
+    preparationTime: '25-30 minutes',
+    availableDate: '2026-11-26',
+    imageUrl: img('1571877227200-a0d98ea607e9'),
+    description:
+      'Wild mushrooms, truffle cream, mozzarella and thyme on a blistered stone-baked base.',
+  },
+]
+
 
 export type MenuItem = {
   id: string
