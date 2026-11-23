@@ -10,6 +10,17 @@ export type MenuCategory =
   | 'Sides'
   | 'Desserts'
 
+export interface MenuItems {
+  pizzaName: string
+  category: string
+  price: number
+  preparationTime: string
+  availableDate: string
+  imageUrl: string
+  description: string
+}
+
+
 export type MenuItem = {
   id: string
   name: string

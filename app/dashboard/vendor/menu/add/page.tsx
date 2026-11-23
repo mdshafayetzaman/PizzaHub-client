@@ -1,623 +1,391 @@
 'use client'
 
-import { useEffect, useState, type FormEvent, type ChangeEvent } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useSession } from '@/lib/auth-client'
-import { toast } from 'sonner'
 import {
   ArrowLeft,
   Pizza,
   PlusCircle,
   ImagePlus,
   Utensils,
-  MapPin,
+  CalendarDays,
   Clock3,
   DollarSign,
-  X,
-  Loader2,
-  CheckCircle2,
-  Upload,
-  Sparkles,
-  FileImage,
-  ChefHat,
   Tag,
+  FileText,
+  Sparkles,
+  Image as ImageIcon,
+  CheckCircle2,
+  X,
 } from 'lucide-react'
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+import { createMenu } from '@/lib/actions/menuitem'
+import type { MenuItems } from '@/lib/data'
 
 const categories = [
-  'Classic Pizzas',
-  'Vegetarian Pizzas',
-  'Meat Lovers',
-  'Specialty / Gourmet Pizzas',
-  'Sides & Appetizers',
-  'Beverages & Desserts',
+  { value: 'classic', label: 'Classic Pizza' },
+  { value: 'cheese', label: 'Cheese Pizza' },
+  { value: 'chicken', label: 'Chicken Pizza' },
+  { value: 'vegetarian', label: 'Vegetarian Pizza' },
+  { value: 'special', label: 'Special Pizza' },
 ]
 
-interface MenuForm {
-  itemName: string
-  category: string
-  description: string
-  price: string
-  location: string
-}
+const inputClass =
+  'w-full min-h-[54px] rounded-xl border border-zinc-300 bg-zinc-100 px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-500 outline-none transition-all duration-300 focus:border-red-500 focus:bg-white focus:ring-4 focus:ring-red-500/10'
 
-const initialForm: MenuForm = {
-  itemName: '',
-  category: '',
-  description: '',
-  price: '',
-  location: '',
-}
+const labelClass =
+  'mb-2.5 flex items-center gap-2 text-sm font-semibold text-zinc-200'
 
 export default function NewAddPage() {
-  const router = useRouter()
-  const { data: session, isPending: sessionLoading } = useSession()
-
-  const [form, setForm] = useState<MenuForm>(initialForm)
-  const [image, setImage] = useState<File | null>(null)
-  const [preview, setPreview] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (!sessionLoading && !session) {
-      router.replace('/login')
-    }
-  }, [session, sessionLoading, router])
+    if (!toastMessage) return
 
-  useEffect(() => {
-    if (preview) return
-    return () => {}
-  }, [preview])
+    const timer = setTimeout(() => {
+      setToastMessage('')
+    }, 4000)
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target
-    setForm((prev) => ({ ...prev, [name]: value }))
-  }
+    return () => clearTimeout(timer)
+  }, [toastMessage])
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-
-    if (!file) return
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select a valid image.')
-      e.target.value = ''
-      return
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB.')
-      e.target.value = ''
-      return
-    }
-
-    setImage(file)
-    setPreview(URL.createObjectURL(file))
-  }
-
-  const removeImage = () => {
-    if (preview) URL.revokeObjectURL(preview)
-    setImage(null)
-    setPreview('')
-  }
-
-  const uploadImage = async (file: File): Promise<string> => {
-    const formData = new FormData()
-    formData.append('image', file)
-
-    const response = await fetch(`${API_URL}/api/upload-image`, {
-      method: 'POST',
-      credentials: 'include',
-      body: formData,
-    })
-
-    const result = await response.json()
-
-    if (!response.ok) {
-      throw new Error(result.message || 'Image upload failed.')
-    }
-
-    const imageUrl = result.url || result.imageUrl || result.data?.url
-
-    if (!imageUrl) {
-      throw new Error('Image URL was not returned by the server.')
-    }
-
-    return imageUrl
-  }
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!session?.user) {
-      toast.error('Please login first.')
-      router.push('/login')
-      return
-    }
+    const form = e.currentTarget
+    const formData = new FormData(form)
 
-    if (session.user.role !== 'vendor') {
-      toast.error('Only vendors can add menu items.')
-      return
-    }
-
-    if (!image) {
-      toast.error('Please upload a pizza image.')
-      return
-    }
-
-    if (
-      !form.itemName.trim() ||
-      !form.category ||
-      !form.description.trim() ||
-      !form.location.trim()
-    ) {
-      toast.error('Please fill in all required fields.')
-      return
-    }
-
-    const price = Number(form.price)
-
-    if (!Number.isFinite(price) || price <= 0) {
-      toast.error('Please enter a valid price.')
-      return
-    }
-
-    if (form.description.trim().length < 10) {
-      toast.error('Description must contain at least 10 characters.')
-      return
+    const menu: MenuItems = {
+      pizzaName: String(formData.get('pizzaName')),
+      category: String(formData.get('category')),
+      price: Number(formData.get('price')),
+      preparationTime: String(formData.get('preparationTime')),
+      availableDate: String(formData.get('availableDate')),
+      imageUrl: String(formData.get('imageUrl')),
+      description: String(formData.get('description')),
     }
 
     try {
-      setLoading(true)
-      setUploadProgress(true)
+      setIsLoading(true)
 
-      const imageUrl = await uploadImage(image)
+      const result = await createMenu(menu)
 
-      setUploadProgress(false)
+      console.log('Menu Created:', result)
 
-      const response = await fetch(`${API_URL}/api/menu-items`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemName: form.itemName.trim(),
-          category: form.category,
-          description: form.description.trim(),
-          price,
-          location: form.location.trim(),
-          images: [imageUrl],
-        }),
-      })
+      setToastType('success')
+      setToastMessage(`${menu.pizzaName} has been added successfully.`)
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to create menu item.')
-      }
-
-      toast.success('Your menu item has been submitted for approval!')
-
-      setForm(initialForm)
-      removeImage()
-
-      router.push('/dashboard/vendor/menu')
-      router.refresh()
+      form.reset()
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Something went wrong.',
-      )
+      console.error('Menu Creation Failed:', error)
+
+      setToastType('error')
+      setToastMessage('Failed to create pizza. Please try again.')
     } finally {
-      setLoading(false)
-      setUploadProgress(false)
+      setIsLoading(false)
     }
   }
 
-  if (sessionLoading || !session) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0c0c0e]">
-        <Loader2 className="size-9 animate-spin text-orange-500" />
-      </div>
-    )
-  }
-
-  if (session.user.role !== 'vendor') {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#0c0c0e] px-4 text-center text-white">
-        <ChefHat className="size-12 text-orange-500" />
-        <h2 className="text-2xl font-bold">Access Denied</h2>
-        <p className="text-zinc-400">
-          Only restaurant vendors can add menu items.
-        </p>
-        <Link
-          href="/dashboard"
-          className="rounded-xl bg-orange-500 px-6 py-3 font-bold"
-        >
-          Go to Dashboard
-        </Link>
-      </div>
-    )
-  }
-
-  const inputClass =
-    'h-12 w-full rounded-xl border border-white/10 bg-[#101012] px-4 text-sm text-white outline-none transition-all duration-300 placeholder:text-zinc-600 hover:border-white/20 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10'
-
-  const labelClass = 'mb-2 block text-sm font-semibold text-zinc-300'
-
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#0c0c0e] px-4 py-8 text-white sm:px-6 lg:px-10">
-      <div className="pointer-events-none absolute -left-40 top-20 size-96 rounded-full bg-red-600/10 blur-[130px]" />
-      <div className="pointer-events-none absolute -right-40 top-80 size-96 rounded-full bg-orange-500/10 blur-[130px]" />
-
-      <div className="relative mx-auto max-w-6xl">
-        <motion.div
-          initial={{ opacity: 0, x: -15 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
+    <main className="relative min-h-screen overflow-hidden bg-[#09090b] text-white">
+      {toastMessage && (
+        <div
+          role="status"
+          className="fixed right-4 top-5 z-[100] w-[calc(100%-2rem)] max-w-sm"
         >
-          <Link
-            href="/dashboard/vendor"
-            className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-zinc-400 transition hover:text-orange-400"
+          <div
+            className={`overflow-hidden rounded-2xl border bg-[#18181b] shadow-2xl shadow-black/40 ${
+              toastType === 'success'
+                ? 'border-emerald-500/20'
+                : 'border-red-500/20'
+            }`}
           >
-            <ArrowLeft className="size-4" />
-            Back to Dashboard
-          </Link>
-        </motion.div>
+            <div className="flex items-start gap-3 p-4">
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                  toastType === 'success'
+                    ? 'bg-emerald-500/15 text-emerald-400'
+                    : 'bg-red-500/15 text-red-400'
+                }`}
+              >
+                <CheckCircle2 size={25} />
+              </div>
 
-        <div className="mb-9 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 shadow-xl shadow-orange-950/40">
-              <Pizza className="size-7 text-white" />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-sm font-bold text-white">
+                  {toastType === 'success'
+                    ? 'Pizza Created Successfully!'
+                    : 'Something Went Wrong!'}
+                </h3>
+
+                <p className="mt-1 text-xs leading-5 text-zinc-400">
+                  {toastMessage}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setToastMessage('')}
+                aria-label="Close notification"
+                className="rounded-lg p-1 text-zinc-500 transition hover:bg-white/10 hover:text-white"
+              >
+                <X size={18} />
+              </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="mb-2 flex items-center gap-2">
-              <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[2px] text-orange-400">
-                Vendor Workspace
-              </span>
-              <Sparkles className="size-4 text-orange-400" />
-            </div>
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-red-600/10 blur-[130px]" />
+        <div className="absolute -right-40 top-1/3 h-[500px] w-[500px] rounded-full bg-orange-500/10 blur-[130px]" />
+        <div className="absolute bottom-0 left-1/3 h-[350px] w-[350px] rounded-full bg-rose-600/10 blur-[120px]" />
+      </div>
 
-            <h1 className="text-3xl font-black tracking-tight sm:text-4xl lg:text-5xl">
-              Add New{' '}
-              <span className="bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-                Menu Item
-              </span>
-            </h1>
+      <div className="relative mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+        <Link
+          href="/dashboard/vendor"
+          className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all duration-300 hover:border-red-500/40 hover:bg-red-500/10 hover:text-white"
+        >
+          <ArrowLeft
+            size={17}
+            className="transition-transform group-hover:-translate-x-1"
+          />
+          Back to Dashboard
+        </Link>
 
-            <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-400">
-              Bring your delicious creations to PizzaHub. Add your pizza details
-              and let customers discover your taste.
-            </p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4"
-          >
-            <div className="flex size-11 items-center justify-center rounded-xl bg-emerald-500/10">
-              <CheckCircle2 className="size-5 text-emerald-400" />
-            </div>
+        <section className="mt-8 grid items-start gap-8 xl:grid-cols-[0.85fr_1.5fr]">
+          <div className="space-y-7 xl:sticky xl:top-8">
             <div>
-              <p className="text-sm font-bold">Quality Matters</p>
-              <p className="mt-1 text-xs text-zinc-500">
-                New items need admin approval
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-semibold tracking-wider text-red-300">
+                <Sparkles size={14} />
+                VENDOR MENU MANAGEMENT
+              </div>
+
+              <h1 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+                Create Your
+                <span className="mt-2 block bg-gradient-to-r from-red-400 via-orange-400 to-amber-300 bg-clip-text text-transparent">
+                  Delicious Pizza
+                </span>
+              </h1>
+
+              <p className="mt-5 max-w-lg text-sm leading-7 text-zinc-400 sm:text-base">
+                Add a new pizza to your restaurant menu. Give your customers
+                something delicious to discover.
               </p>
             </div>
-          </motion.div>
-        </div>
 
-        <div className="grid items-start gap-6 lg:grid-cols-[1fr_320px]">
-          <motion.form
-            onSubmit={handleSubmit}
-            initial={{ opacity: 0, y: 25 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.1 }}
-            className="rounded-3xl border border-white/[0.08] bg-[#171719] p-5 shadow-2xl shadow-black/20 sm:p-8"
-          >
-            <div className="mb-7 flex items-center gap-3 border-b border-white/[0.07] pb-6">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
-                <Utensils className="size-5" />
+            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-red-500/15 via-zinc-900 to-orange-500/10 p-7 sm:p-9">
+              <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-red-500/10 blur-3xl" />
+
+              <div className="relative">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-red-400/20 bg-red-500/10 text-red-400">
+                  <Pizza size={34} />
+                </div>
+
+                <h2 className="mt-7 text-2xl font-bold">
+                  Your Menu, Your Style
+                </h2>
+
+                <p className="mt-3 text-sm leading-7 text-zinc-400">
+                  Make your pizza stand out with a catchy name, delicious
+                  description and an attractive image.
+                </p>
+
+                <div className="mt-8 flex items-center gap-3 border-t border-white/10 pt-6">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
+                    <Utensils size={20} />
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-semibold">Ready to serve?</p>
+
+                    <p className="mt-1 text-xs text-zinc-500">
+                      Let's add something tasty.
+                    </p>
+                  </div>
+                </div>
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-[#111114]/95 p-5 shadow-2xl shadow-black/30 backdrop-blur-xl sm:p-8 lg:p-10">
+            <div className="mb-8 flex items-center gap-4 border-b border-white/10 pb-7">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 shadow-lg shadow-red-500/20">
+                <PlusCircle size={27} />
+              </div>
+
               <div>
-                <h2 className="font-bold">Menu Information</h2>
-                <p className="mt-1 text-xs text-zinc-500">
-                  Enter your food details carefully
+                <h2 className="text-xl font-bold sm:text-2xl">Add New Pizza</h2>
+
+                <p className="mt-1 text-sm text-zinc-400">
+                  Enter your pizza information below
                 </p>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="grid gap-5 sm:grid-cols-2">
+            <form className="space-y-6" onSubmit={handleSubmit}>
+              <div>
+                <label htmlFor="pizzaName" className={labelClass}>
+                  <Pizza size={16} className="text-red-400" />
+                  Pizza Name
+                </label>
+
+                <input
+                  id="pizzaName"
+                  name="pizzaName"
+                  type="text"
+                  placeholder="e.g. Italian Margherita Pizza"
+                  required
+                  className={inputClass}
+                />
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2">
                 <div>
-                  <label className={labelClass}>
-                    Item Name <span className="text-red-400">*</span>
+                  <label htmlFor="category" className={labelClass}>
+                    <Tag size={16} className="text-red-400" />
+                    Category
                   </label>
-                  <input
-                    name="itemName"
-                    value={form.itemName}
-                    onChange={handleChange}
-                    placeholder="e.g. Margherita Pizza"
-                    className={inputClass}
-                    maxLength={80}
+
+                  <select
+                    id="category"
+                    name="category"
                     required
+                    defaultValue=""
+                    className={`${inputClass} cursor-pointer`}
+                  >
+                    <option value="" disabled>
+                      Select Category
+                    </option>
+
+                    {categories.map((category) => (
+                      <option key={category.value} value={category.value}>
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="price" className={labelClass}>
+                    <DollarSign size={16} className="text-red-400" />
+                    Price ($)
+                  </label>
+
+                  <input
+                    id="price"
+                    name="price"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 15.99"
+                    required
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="preparationTime" className={labelClass}>
+                    <Clock3 size={16} className="text-red-400" />
+                    Preparation Time
+                  </label>
+
+                  <input
+                    id="preparationTime"
+                    name="preparationTime"
+                    type="text"
+                    placeholder="e.g. 20-30 minutes"
+                    required
+                    className={inputClass}
                   />
                 </div>
 
                 <div>
-                  <label className={labelClass}>
-                    Category <span className="text-red-400">*</span>
+                  <label htmlFor="availableDate" className={labelClass}>
+                    <CalendarDays size={16} className="text-red-400" />
+                    Available Date
                   </label>
-                  <div className="relative">
-                    <Tag className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-orange-400" />
-                    <select
-                      name="category"
-                      value={form.category}
-                      onChange={handleChange}
-                      className={`${inputClass} appearance-none pl-11 pr-10`}
-                      required
-                    >
-                      <option value="">Select Category</option>
-                      {categories.map((category) => (
-                        <option
-                          key={category}
-                          value={category}
-                          className="bg-zinc-900"
-                        >
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
 
-                <div>
-                  <label className={labelClass}>
-                    Price ($) <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-orange-400" />
-                    <input
-                      name="price"
-                      type="number"
-                      value={form.price}
-                      onChange={handleChange}
-                      placeholder="e.g. 15"
-                      min="0.01"
-                      step="0.01"
-                      className={`${inputClass} pl-11`}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={labelClass}>
-                    Restaurant Location <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <MapPin className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-orange-400" />
-                    <input
-                      name="location"
-                      value={form.location}
-                      onChange={handleChange}
-                      placeholder="e.g. Dhanmondi, Dhaka"
-                      className={`${inputClass} pl-11`}
-                      required
-                    />
-                  </div>
+                  <input
+                    id="availableDate"
+                    name="availableDate"
+                    type="date"
+                    required
+                    className={`${inputClass} cursor-pointer`}
+                  />
                 </div>
               </div>
 
               <div>
-                <label className={labelClass}>
-                  Pizza Image <span className="text-red-400">*</span>
+                <label htmlFor="imageUrl" className={labelClass}>
+                  <ImagePlus size={16} className="text-red-400" />
+                  Pizza Image URL
                 </label>
-                <input
-                  id="pizza-image"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
 
-                <AnimatePresence mode="wait">
-                  {preview ? (
-                    <motion.div
-                      key="preview"
-                      initial={{ opacity: 0, scale: 0.96 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.96 }}
-                      className="relative overflow-hidden rounded-2xl border border-orange-500/30 bg-black"
-                    >
-                      <img
-                        src={preview}
-                        alt="Pizza preview"
-                        className="h-64 w-full object-cover sm:h-72"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/90 to-transparent p-4 pt-12">
-                        <div className="flex items-center gap-2">
-                          <FileImage className="size-4 text-orange-400" />
-                          <span className="max-w-[200px] truncate text-xs font-medium text-white">
-                            {image?.name}
-                          </span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={removeImage}
-                          className="flex size-9 items-center justify-center rounded-xl bg-red-500 text-white transition hover:bg-red-600"
-                        >
-                          <X className="size-4" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.label
-                      key="upload"
-                      htmlFor="pizza-image"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      whileHover={{ scale: 1.01 }}
-                      className="flex min-h-52 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-zinc-700 bg-[#101012] px-4 py-8 text-center transition hover:border-orange-500/60 hover:bg-orange-500/[0.03]"
-                    >
-                      <div className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-400">
-                        <ImagePlus className="size-7" />
-                      </div>
-                      <p className="text-sm font-bold text-zinc-200">
-                        Drop your pizza image here
-                      </p>
-                      <p className="mt-2 text-xs text-zinc-500">
-                        or click to browse your files
-                      </p>
-                      <span className="mt-4 rounded-lg bg-white/5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-orange-400">
-                        PNG, JPG, WEBP · Max 5MB
-                      </span>
-                    </motion.label>
-                  )}
-                </AnimatePresence>
+                <div className="relative">
+                  <ImageIcon
+                    size={18}
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
+                  />
+
+                  <input
+                    id="imageUrl"
+                    name="imageUrl"
+                    type="url"
+                    placeholder="https://example.com/pizza-image.jpg"
+                    required
+                    className={`${inputClass} pl-11`}
+                  />
+                </div>
               </div>
 
               <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className={labelClass}>
-                    Description <span className="text-red-400">*</span>
-                  </label>
-                  <span className="text-[10px] text-zinc-600">
-                    {form.description.length}/500
-                  </span>
-                </div>
+                <label htmlFor="description" className={labelClass}>
+                  <FileText size={16} className="text-red-400" />
+                  Description
+                </label>
+
                 <textarea
+                  id="description"
                   name="description"
-                  value={form.description}
-                  onChange={handleChange}
                   rows={5}
-                  maxLength={500}
-                  placeholder="Describe your delicious ingredients, flavors, toppings and what makes this item special..."
-                  className="w-full resize-none rounded-xl border border-white/10 bg-[#101012] p-4 text-sm leading-6 text-white outline-none transition duration-300 placeholder:text-zinc-600 hover:border-white/20 focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10"
+                  placeholder="Describe your delicious pizza, ingredients and special taste..."
                   required
+                  className={`${inputClass} min-h-[140px] resize-y`}
                 />
               </div>
-            </div>
 
-            <div className="mt-8 flex flex-col-reverse gap-3 border-t border-white/[0.07] pt-6 sm:flex-row sm:justify-end">
-              <Link
-                href="/dashboard/vendor/menu"
-                className="flex h-12 items-center justify-center rounded-xl border border-white/10 px-7 text-sm font-semibold text-zinc-300 transition hover:border-white/20 hover:bg-white/5"
-              >
-                Cancel
-              </Link>
+              <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-7 sm:flex-row sm:justify-end">
+                <Link
+                  href="/dashboard/vendor"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-7 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white"
+                >
+                  Cancel
+                </Link>
 
-              <motion.button
-                type="submit"
-                disabled={loading}
-                whileHover={{ scale: loading ? 1 : 1.02, y: loading ? 0 : -2 }}
-                whileTap={{ scale: loading ? 1 : 0.97 }}
-                className="flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 px-8 text-sm font-bold text-white shadow-lg shadow-orange-950/30 transition disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="size-5 animate-spin" />
-                    {uploadProgress
-                      ? 'Uploading Image...'
-                      : 'Creating Menu Item...'}
-                  </>
-                ) : (
-                  <>
-                    <PlusCircle className="size-5" />
-                    Add Menu Item
-                  </>
-                )}
-              </motion.button>
-            </div>
-          </motion.form>
-
-          <motion.aside
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-            className="space-y-5"
-          >
-            <div className="overflow-hidden rounded-3xl border border-white/[0.08] bg-[#171719]">
-              <div className="relative flex h-36 items-center justify-center overflow-hidden bg-gradient-to-br from-red-600/20 via-orange-500/10 to-transparent">
-                <div className="absolute -right-5 -top-10 size-40 rounded-full bg-orange-500/10 blur-3xl" />
-                <Pizza className="relative size-16 text-orange-500/80" />
-                <div className="absolute bottom-3 left-5 flex items-center gap-2">
-                  <Sparkles className="size-3 text-orange-400" />
-                  <span className="text-[10px] font-bold uppercase tracking-[2px] text-orange-300">
-                    PizzaHub Kitchen
-                  </span>
-                </div>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-orange-500 px-8 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition-all duration-300 hover:-translate-y-1 hover:from-red-500 hover:to-orange-400 hover:shadow-xl hover:shadow-red-600/30 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <PlusCircle
+                    size={18}
+                    className="transition-transform group-hover:rotate-90"
+                  />
+                  {isLoading ? 'Creating...' : 'Add Pizza'}
+                </button>
               </div>
-              <div className="p-5">
-                <h3 className="font-bold">Make it irresistible!</h3>
-                <p className="mt-2 text-xs leading-6 text-zinc-500">
-                  Great photos and clear descriptions help customers discover
-                  your delicious menu items.
-                </p>
-              </div>
-            </div>
+            </form>
+          </div>
+        </section>
 
-            <div className="rounded-3xl border border-white/[0.08] bg-[#171719] p-5">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
-                  <ChefHat className="size-5" />
-                </div>
-                <h3 className="font-bold">Publishing Guidelines</h3>
-              </div>
-
-              <div className="space-y-4">
-                {[
-                  'Use a clear, attractive food image.',
-                  'Write an honest and detailed description.',
-                  'Select the correct menu category.',
-                  'Provide your restaurant location.',
-                ].map((item, index) => (
-                  <div key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-400" />
-                    <p className="text-xs leading-5 text-zinc-400">{item}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-orange-500/20 bg-gradient-to-br from-orange-500/10 to-red-500/[0.03] p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex size-10 items-center justify-center rounded-xl bg-orange-500/15 text-orange-400">
-                  <Clock3 className="size-5" />
-                </div>
-                <h3 className="font-bold">Approval Process</h3>
-              </div>
-              <p className="mt-3 text-xs leading-6 text-zinc-400">
-                Your newly submitted menu item will have{' '}
-                <span className="font-bold text-orange-400">Pending</span>{' '}
-                status. An administrator must approve it before customers can
-                see it.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-zinc-300">
-                <Upload className="size-4 text-orange-400" />
-                Image Hosting
-              </div>
-              <p className="mt-2 text-[11px] leading-5 text-zinc-500">
-                Your image will be uploaded to ImgBB when you submit the form.
-              </p>
-            </div>
-          </motion.aside>
-        </div>
+        <p className="mt-10 text-center text-xs text-zinc-500">
+          PizzaHub Vendor Dashboard · Create something delicious
+        </p>
       </div>
     </main>
   )
