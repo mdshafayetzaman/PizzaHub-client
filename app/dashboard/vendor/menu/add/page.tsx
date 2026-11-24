@@ -88,7 +88,7 @@ export default function NewAddPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#09090b] text-white">
+    <div className="relative min-h-full text-white">
       {toastMessage && (
         <div
           role="status"
@@ -137,7 +137,7 @@ export default function NewAddPage() {
         </div>
       )}
 
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-red-600/10 blur-[130px]" />
         <div className="absolute -right-40 top-1/3 h-[500px] w-[500px] rounded-full bg-orange-500/10 blur-[130px]" />
         <div className="absolute bottom-0 left-1/3 h-[350px] w-[350px] rounded-full bg-rose-600/10 blur-[120px]" />
@@ -145,14 +145,14 @@ export default function NewAddPage() {
 
       <div className="relative mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
         <Link
-          href="/dashboard/vendor"
+          href="/dashboard/vendor/menu"
           className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all duration-300 hover:border-red-500/40 hover:bg-red-500/10 hover:text-white"
         >
           <ArrowLeft
             size={17}
             className="transition-transform group-hover:-translate-x-1"
           />
-          Back to Dashboard
+          Back to Menu
         </Link>
 
         <section className="mt-8 grid items-start gap-8 xl:grid-cols-[0.85fr_1.5fr]">
@@ -202,7 +202,7 @@ export default function NewAddPage() {
                     <p className="text-sm font-semibold">Ready to serve?</p>
 
                     <p className="mt-1 text-xs text-zinc-500">
-                      Let's add something tasty.
+                      Let&apos;s add something tasty.
                     </p>
                   </div>
                 </div>
@@ -361,7 +361,7 @@ export default function NewAddPage() {
 
               <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-7 sm:flex-row sm:justify-end">
                 <Link
-                  href="/dashboard/vendor"
+                  href="/dashboard/vendor/menu"
                   className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] px-7 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white"
                 >
                   Cancel
@@ -387,6 +387,6 @@ export default function NewAddPage() {
           PizzaHub Vendor Dashboard · Create something delicious
         </p>
       </div>
-    </main>
+    </div>
   )
 }

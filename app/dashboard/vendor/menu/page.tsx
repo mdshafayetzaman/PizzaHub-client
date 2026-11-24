@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -11,6 +10,7 @@ import {
   ImagePlus,
   Inbox,
   Layers,
+  Loader2,
   Pencil,
   Pizza,
   PlusCircle,
@@ -23,7 +23,8 @@ import {
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
-import { VENDOR_MENU_ITEMS, type MenuItems } from '@/lib/data'
+import type { MenuItems } from '@/lib/data'
+import { getMenuItems } from '@/lib/api/menu'
 
 const categories = [
   { value: 'classic', label: 'Classic Pizza' },
@@ -63,10 +64,12 @@ const MONTHS = [
 ]
 
 const formatDate = (value: string) => {
-  const [year, month, day] = value.split('-')
+  if (!value) return 'N/A'
+
+  const [year, month, day] = value.slice(0, 10).split('-')
   const monthIndex = Number(month) - 1
 
-  if (!year || !day || Number.isNaN(monthIndex) || !MONTHS[monthIndex]) {
+  if (!year || !day || !MONTHS[monthIndex]) {
     return value
   }
 
@@ -74,8 +77,6 @@ const formatDate = (value: string) => {
 }
 
 const formatDollar = (value: number) => `$${value.toFixed(2)}`
-
-const todayISO = () => new Date().toISOString().slice(0, 10)
 
 const inputClass =
   'w-full min-h-[46px] rounded-xl border border-zinc-700 bg-zinc-900/80 px-4 py-2.5 text-sm font-medium text-white placeholder:text-zinc-500 outline-none transition-all duration-300 [color-scheme:dark] focus:border-red-500 focus:bg-zinc-900 focus:ring-4 focus:ring-red-500/10'
@@ -109,14 +110,50 @@ const MenuImage = ({ src, alt, className = '' }: MenuImageProps) => (
 )
 
 export default function ManageMenuPage() {
-  const [items, setItems] = useState<MenuItems[]>(VENDOR_MENU_ITEMS)
+  const [items, setItems] = useState<MenuItems[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [query, setQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [today, setToday] = useState('')
+
   const [toast, setToast] = useState<{
     message: string
     type: 'success' | 'error'
   } | null>(null)
+
+  useEffect(() => {
+    const date = new Date()
+
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initialize client date after mount to avoid SSR mismatch
+    setToday(`${year}-${month}-${day}`)
+  }, [])
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        setLoading(true)
+        setError('')
+
+        const data = await getMenuItems()
+
+        setItems(data)
+      } catch (error) {
+        setError(
+          error instanceof Error ? error.message : 'Failed to load menu items',
+        )
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchItems()
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -158,26 +195,45 @@ export default function ManageMenuPage() {
 
   const stats = useMemo(() => {
     const total = items.length
+
     const uniqueCategories = new Set(items.map((item) => item.category)).size
+
     const averagePrice = total
       ? items.reduce((sum, item) => sum + item.price, 0) / total
       : 0
-    const today = todayISO()
-    const availableNow = items.filter((item) => item.availableDate <= today).length
 
-    return { total, uniqueCategories, averagePrice, availableNow }
-  }, [items])
+    const availableNow = today
+      ? items.filter((item) => item.availableDate <= today).length
+      : 0
+
+    return {
+      total,
+      uniqueCategories,
+      averagePrice,
+      availableNow,
+    }
+  }, [items, today])
 
   const editingItem = editingIndex !== null ? items[editingIndex] : null
+
   const hasActiveFilters = query.trim() !== '' || categoryFilter !== 'all'
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') =>
+  const showToast = (
+    message: string,
+    type: 'success' | 'error' = 'success',
+  ) => {
     setToast({ message, type })
+  }
 
   const handleDelete = (index: number) => {
     const removed = items[index]
 
-    setItems((previous) => previous.filter((_, itemIndex) => itemIndex !== index))
+    if (!removed) return
+
+    setItems((previous) =>
+      previous.filter((_, itemIndex) => itemIndex !== index),
+    )
+
     showToast(`${removed.pizzaName} has been removed from your menu.`)
   }
 
@@ -200,11 +256,12 @@ export default function ManageMenuPage() {
 
     setItems((previous) =>
       previous.map((item, itemIndex) =>
-        itemIndex === editingIndex ? updated : item
-      )
+        itemIndex === editingIndex ? updated : item,
+      ),
     )
 
     setEditingIndex(null)
+
     showToast(`${updated.pizzaName} has been updated successfully.`)
   }
 
@@ -214,7 +271,7 @@ export default function ManageMenuPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#09090b] text-white">
+    <div className="relative min-h-full text-white">
       {toast ? (
         <div
           role="status"
@@ -263,25 +320,14 @@ export default function ManageMenuPage() {
         </div>
       ) : null}
 
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-40 -top-40 h-[500px] w-[500px] rounded-full bg-red-600/10 blur-[130px]" />
         <div className="absolute -right-40 top-1/3 h-[500px] w-[500px] rounded-full bg-orange-500/10 blur-[130px]" />
         <div className="absolute bottom-0 left-1/3 h-[350px] w-[350px] rounded-full bg-rose-600/10 blur-[120px]" />
       </div>
 
       <div className="relative mx-auto max-w-[1500px] px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
-        <Link
-          href="/dashboard/vendor"
-          className="group inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-medium text-zinc-300 transition-all duration-300 hover:border-red-500/40 hover:bg-red-500/10 hover:text-white"
-        >
-          <ArrowLeft
-            size={17}
-            className="transition-transform group-hover:-translate-x-1"
-          />
-          Back to Dashboard
-        </Link>
-
-        <header className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-red-500/20 bg-red-500/10 px-4 py-2 text-xs font-semibold tracking-wider text-red-300">
               <Sparkles size={14} />
@@ -319,7 +365,6 @@ export default function ManageMenuPage() {
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-500/10 text-red-400">
                 <Pizza size={22} />
               </div>
-
               <Badge variant="red">Live</Badge>
             </div>
 
@@ -337,7 +382,6 @@ export default function ManageMenuPage() {
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400">
                 <Layers size={22} />
               </div>
-
               <Badge variant="orange">Variety</Badge>
             </div>
 
@@ -355,7 +399,6 @@ export default function ManageMenuPage() {
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
                 <DollarSign size={22} />
               </div>
-
               <Badge variant="emerald">Average</Badge>
             </div>
 
@@ -373,7 +416,6 @@ export default function ManageMenuPage() {
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
                 <CalendarDays size={22} />
               </div>
-
               <Badge variant="violet">Ready</Badge>
             </div>
 
@@ -443,7 +485,25 @@ export default function ManageMenuPage() {
             </div>
           </div>
 
-          {rows.length === 0 ? (
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Loader2 size={36} className="animate-spin text-red-400" />
+              <p className="mt-4 text-sm text-zinc-400">
+                Loading menu items...
+              </p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+              <p className="text-sm text-red-400">{error}</p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="mt-4 rounded-xl border border-white/10 px-5 py-2 text-sm text-zinc-300 hover:bg-white/10"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : rows.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-500">
                 <Inbox size={30} />
@@ -480,7 +540,6 @@ export default function ManageMenuPage() {
             </div>
           ) : (
             <>
-              {/* Desktop table */}
               <div className="hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[1040px] text-left">
                   <thead className="border-b border-white/10 bg-white/[0.03]">
@@ -522,7 +581,11 @@ export default function ManageMenuPage() {
                         </td>
 
                         <td className="px-4 py-4">
-                          <Badge variant={categoryVariant[item.category] ?? 'default'}>
+                          <Badge
+                            variant={
+                              categoryVariant[item.category] ?? 'default'
+                            }
+                          >
                             {categoryLabel(item.category)}
                           </Badge>
                         </td>
@@ -575,7 +638,6 @@ export default function ManageMenuPage() {
                 </table>
               </div>
 
-              {/* Mobile cards */}
               <div className="space-y-4 p-4 md:hidden">
                 {rows.map(({ item, index }) => (
                   <article
@@ -595,7 +657,11 @@ export default function ManageMenuPage() {
                         </p>
 
                         <div className="mt-2">
-                          <Badge variant={categoryVariant[item.category] ?? 'default'}>
+                          <Badge
+                            variant={
+                              categoryVariant[item.category] ?? 'default'
+                            }
+                          >
                             {categoryLabel(item.category)}
                           </Badge>
                         </div>
@@ -672,7 +738,9 @@ export default function ManageMenuPage() {
           aria-label={`Edit ${editingItem.pizzaName}`}
           className="fixed inset-0 z-[110] flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
           onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setEditingIndex(null)
+            if (event.target === event.currentTarget) {
+              setEditingIndex(null)
+            }
           }}
         >
           <div className="my-8 w-full max-w-lg overflow-hidden rounded-3xl border border-white/10 bg-[#111114] shadow-2xl shadow-black/50">
@@ -703,7 +771,10 @@ export default function ManageMenuPage() {
               </button>
             </div>
 
-            <form className="max-h-[70vh] space-y-4 overflow-y-auto p-5 sm:p-6" onSubmit={handleSave}>
+            <form
+              className="max-h-[70vh] space-y-4 overflow-y-auto p-5 sm:p-6"
+              onSubmit={handleSave}
+            >
               <div>
                 <label htmlFor="edit-pizzaName" className={labelClass}>
                   <Pizza size={14} className="text-red-400" />
@@ -789,7 +860,7 @@ export default function ManageMenuPage() {
                     name="availableDate"
                     type="date"
                     required
-                    defaultValue={editingItem.availableDate}
+                    defaultValue={editingItem.availableDate.slice(0, 10)}
                     className={inputClass}
                   />
                 </div>
@@ -848,6 +919,6 @@ export default function ManageMenuPage() {
           </div>
         </div>
       ) : null}
-    </main>
+    </div>
   )
 }

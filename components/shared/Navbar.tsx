@@ -14,12 +14,19 @@ export default function Navbar() {
   const { data: session, isPending } = useSession()
 
   const user = session?.user
+  const dashboardHref =
+    user?.role === 'vendor'
+      ? '/dashboard/vendor/menu'
+      : user?.role === 'customer'
+        ? '/dashboard/customers'
+        : user?.role === 'admin'
+          ? '/dashboard/admin'
+          : '/dashboard'
+
   const navLinks = [
     { name: 'Home', href: '/' },
-    { name: 'Browse menu', href: '/menu' },
-    ...(user
-      ? [{ name: 'Dashboard', href: `/dashboard/${user.role}` as const }]
-      : []),
+    { name: 'Browse menu', href: '/browse-menu' },
+    ...(user ? [{ name: 'Dashboard', href: dashboardHref }] : []),
   ]
 
   const handleOrder = () => {

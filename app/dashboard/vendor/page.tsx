@@ -1,11 +1,5 @@
-import React from 'react';
+import { redirect } from 'next/navigation'
 
-const VendorPage = () => {
-  return (
-    <div>
-      
-    </div>
-  );
-};
-
-export default VendorPage;
+export default function VendorPage() {
+  redirect('/dashboard/vendor/menu')
+}

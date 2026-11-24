@@ -19,19 +19,14 @@ import {
 
 import {
   LayoutDashboard,
-  Users,
   Pizza,
-  ShoppingBag,
-  Settings,
+  PlusCircle,
   LogOut,
   ChefHat,
   UserRound,
-  ClipboardList,
-  CreditCard,
   ShieldCheck,
-  PlusCircle,
-  Receipt,
   Store,
+  Home,
 } from 'lucide-react'
 
 type Role = 'admin' | 'vendor' | 'customer'
@@ -50,6 +45,16 @@ type MenuGroup = {
 const menuItems: Record<Role, MenuGroup[]> = {
   admin: [
     {
+      title: 'NAVIGATION',
+      items: [
+        {
+          name: 'Home',
+          url: '/',
+          icon: Home,
+        },
+      ],
+    },
+    {
       title: 'OVERVIEW',
       items: [
         {
@@ -59,55 +64,24 @@ const menuItems: Record<Role, MenuGroup[]> = {
         },
       ],
     },
-    {
-      title: 'MANAGEMENT',
-      items: [
-        {
-          name: 'Manage Users',
-          url: '/dashboard/admin/users',
-          icon: Users,
-        },
-
-        {
-          name: 'Add Menu Item',
-          url: '/dashboard/vendor/addmenu/newadd',
-          icon: PlusCircle,
-        },
-        {
-          name: 'Transactions',
-          url: '/dashboard/admin/transactions',
-          icon: Receipt,
-        },
-      ],
-    },
-    {
-      title: 'ACCOUNT',
-      items: [
-        {
-          name: 'Profile Settings',
-          url: '/dashboard/admin/settings',
-          icon: Settings,
-        },
-      ],
-    },
   ],
 
   vendor: [
     {
-      title: 'OVERVIEW',
+      title: 'NAVIGATION',
       items: [
         {
-          name: 'Dashboard',
-          url: '/dashboard/vendor',
-          icon: LayoutDashboard,
+          name: 'Home',
+          url: '/',
+          icon: Home,
         },
       ],
     },
     {
-      title: 'RESTAURANT MANAGEMENT',
+      title: 'MENU MANAGEMENT',
       items: [
         {
-          name: 'My Menu Items',
+          name: 'Menu Items',
           url: '/dashboard/vendor/menu',
           icon: Pizza,
         },
@@ -116,58 +90,28 @@ const menuItems: Record<Role, MenuGroup[]> = {
           url: '/dashboard/vendor/menu/add',
           icon: PlusCircle,
         },
-        {
-          name: 'Customer Orders',
-          url: '/dashboard/vendor/orders',
-          icon: ClipboardList,
-        },
-        {
-          name: 'Subscription',
-          url: '/dashboard/vendor/subscription',
-          icon: CreditCard,
-        },
-      ],
-    },
-    {
-      title: 'ACCOUNT',
-      items: [
-        {
-          name: 'Profile Settings',
-          url: '/dashboard/vendor/settings',
-          icon: Settings,
-        },
       ],
     },
   ],
 
   customer: [
     {
+      title: 'NAVIGATION',
+      items: [
+        {
+          name: 'Home',
+          url: '/',
+          icon: Home,
+        },
+      ],
+    },
+    {
       title: 'OVERVIEW',
       items: [
         {
           name: 'Dashboard',
-          url: '/dashboard/customer',
+          url: '/dashboard/customers',
           icon: LayoutDashboard,
-        },
-      ],
-    },
-    {
-      title: 'MY ACTIVITIES',
-      items: [
-        {
-          name: 'My Orders',
-          url: '/dashboard/customer/orders',
-          icon: ShoppingBag,
-        },
-      ],
-    },
-    {
-      title: 'ACCOUNT',
-      items: [
-        {
-          name: 'Profile Settings',
-          url: '/dashboard/customer/settings',
-          icon: Settings,
         },
       ],
     },
@@ -212,7 +156,7 @@ export function DashboardSidebar() {
 
   const handleLogout = async () => {
     await signOut()
-    router.push('/login')
+    router.push('/sign-in')
     router.refresh()
   }
 
@@ -230,7 +174,7 @@ export function DashboardSidebar() {
     >
       <SidebarHeader className="!bg-[#18181B] p-5">
         <Link
-          href={`/dashboard/${role}`}
+          href="/"
           className="group flex items-center gap-3"
         >
           <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-red-500 via-red-500 to-orange-500 text-white shadow-lg shadow-red-950/40 transition-all duration-500 group-hover:rotate-[-8deg] group-hover:scale-110 group-hover:shadow-orange-500/20">
@@ -275,7 +219,7 @@ export function DashboardSidebar() {
           </div>
         </div>
 
-        {menuItems[role].map((group, index) => (
+        {menuItems[role].map((group) => (
           <SidebarGroup key={group.title} className="mb-5 !bg-transparent">
             <SidebarGroupLabel className="mb-3 px-3 text-[11px] font-extrabold tracking-[0.18em] !text-zinc-400">
               {group.title}
@@ -285,8 +229,13 @@ export function DashboardSidebar() {
               {group.items.map((item) => {
                 const isActive =
                   pathname === item.url ||
-                  (item.url !== `/dashboard/${role}` &&
-                    pathname.startsWith(`${item.url}/`))
+                  (pathname.startsWith(`${item.url}/`) &&
+                    !group.items.some(
+                      (other) =>
+                        other.url !== item.url &&
+                        (pathname === other.url ||
+                          pathname.startsWith(`${other.url}/`)),
+                    ))
 
                 return (
                   <SidebarMenuItem key={item.name}>
