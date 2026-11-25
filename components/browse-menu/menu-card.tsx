@@ -6,6 +6,7 @@ import { Clock, Star, ArrowRight, ShoppingBag } from 'lucide-react'
 import { toast } from 'react-toastify'
 
 import { useSession } from '@/lib/auth-client'
+import { useCart } from '@/lib/cart-context'
 import { formatPrice, type MenuItem } from '@/lib/data'
 
 type MenuCardProps = {
@@ -15,6 +16,7 @@ type MenuCardProps = {
 export default function MenuCard({ item }: MenuCardProps) {
   const router = useRouter()
   const { data: session } = useSession()
+  const { addItem } = useCart()
 
   const handleViewDetails = () => {
     const detailsPath = `/browse-menu/${item.id}`
@@ -25,6 +27,16 @@ export default function MenuCard({ item }: MenuCardProps) {
     }
 
     router.push(detailsPath)
+  }
+
+  const handleAddToCart = () => {
+    if (!item.isAvailable) {
+      toast.error('This item is currently unavailable.')
+      return
+    }
+
+    addItem(item, 1)
+    toast.success(`${item.name} added to cart.`)
   }
 
   const handleOrderNow = () => {
@@ -68,6 +80,16 @@ export default function MenuCard({ item }: MenuCardProps) {
             {item.isAvailable ? 'Available' : 'Unavailable'}
           </span>
         </div>
+
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={!item.isAvailable}
+          aria-label={`Add ${item.name} to cart`}
+          className="absolute bottom-3 right-3 inline-flex size-10 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ShoppingBag aria-hidden className="size-4" />
+        </button>
       </div>
 
       <div className="flex flex-1 flex-col p-5">
@@ -106,7 +128,8 @@ export default function MenuCard({ item }: MenuCardProps) {
           <button
             type="button"
             onClick={handleOrderNow}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-orange-500 px-4 text-sm font-bold text-white transition-all duration-300 hover:bg-orange-400"
+            disabled={!item.isAvailable}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-orange-500 px-4 text-sm font-bold text-white transition-all duration-300 hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <ShoppingBag aria-hidden className="size-4" />
             Order Now

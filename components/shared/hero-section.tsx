@@ -1,12 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowRight,
   ArrowUpRight,
   Clock3,
   Flame,
   Plus,
-  ShoppingBag,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -79,19 +77,6 @@ export default function HeroSection() {
           </p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button
-              nativeButton={false}
-              render={<Link href="/browse-menu" />}
-              className="group h-13 rounded-full bg-orange-500 px-7 text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/40"
-            >
-              <ShoppingBag className="size-4.5" aria-hidden />
-              Order now
-              <ArrowRight
-                className="size-4.5 transition-transform duration-300 group-hover:translate-x-1"
-                aria-hidden
-              />
-            </Button>
-
             <Button
               nativeButton={false}
               variant="outline"

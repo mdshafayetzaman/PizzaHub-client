@@ -2,16 +2,16 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Pizza, ShoppingBag, Menu, X, ArrowUpRight, User } from 'lucide-react'
+import { Pizza, ShoppingBag, Menu, X, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import SignOutButton from '@/components/shared/sign-out-button'
 import { useSession } from '@/lib/auth-client'
+import { useCart } from '@/lib/cart-context'
 
 export default function Navbar() {
-  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const { data: session, isPending } = useSession()
+  const { totalItems } = useCart()
 
   const user = session?.user
   const dashboardHref =
@@ -28,19 +28,6 @@ export default function Navbar() {
     { name: 'Browse menu', href: '/browse-menu' },
     ...(user ? [{ name: 'Dashboard', href: dashboardHref }] : []),
   ]
-
-  const handleOrder = () => {
-    setIsOpen(false)
-
-    // Not authenticated → send the user to the sign-in page.
-    if (!user) {
-      router.push('/sign-in')
-      return
-    }
-
-    // Authenticated → continue to the ordering/menu page.
-    router.push('/menu')
-  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-800/70 bg-[#11100F]/95 text-white backdrop-blur-xl">
@@ -88,8 +75,8 @@ export default function Navbar() {
                 size={20}
                 className="text-neutral-300 transition group-hover:text-orange-500"
               />
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
-                0
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white">
+                {totalItems}
               </span>
             </Link>
 
@@ -135,16 +122,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            <Button
-              onClick={handleOrder}
-              disabled={isPending}
-              className="h-12 rounded-full bg-orange-500 px-6 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:-translate-y-0.5 hover:bg-orange-600"
-            >
-              <span className="flex items-center">
-                Order Now
-                <ArrowUpRight size={17} className="ml-2" />
-              </span>
-            </Button>
+
           </div>
 
           <button
@@ -212,48 +190,31 @@ export default function Navbar() {
                   />
                 </>
               ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    className="h-12 flex-1 rounded-xl border-neutral-700 bg-transparent text-white hover:bg-neutral-800"
-                  >
-                    <Link href="/sign-in" onClick={() => setIsOpen(false)}>
-                      Sign In
-                    </Link>
-                  </Button>
-
-                  <Button
-                    onClick={handleOrder}
-                    className="h-12 flex-1 rounded-xl bg-orange-500 font-bold text-white hover:bg-orange-600"
-                  >
-                    <span className="flex items-center">
-                      Order Now
-                      <ArrowUpRight size={17} className="ml-1 inline" />
-                    </span>
-                  </Button>
-                </>
+                <Button
+                  variant="outline"
+                  className="h-12 w-full rounded-xl border-neutral-700 bg-transparent text-white hover:bg-neutral-800"
+                >
+                  <Link href="/sign-in" onClick={() => setIsOpen(false)}>
+                    Sign In
+                  </Link>
+                </Button>
               )}
             </div>
 
-            {!isPending && user && (
-              <Button
-                onClick={handleOrder}
-                className="mt-3 h-12 w-full rounded-xl bg-orange-500 font-bold text-white hover:bg-orange-600"
-              >
-                <span className="flex items-center">
-                  Order Now
-                  <ArrowUpRight size={17} className="ml-1 inline" />
-                </span>
-              </Button>
-            )}
+
 
             <Link
               href="/cart"
               onClick={() => setIsOpen(false)}
-              className="mt-5 flex items-center gap-3 rounded-xl border border-neutral-800 p-4 text-sm font-medium text-neutral-300"
+              className="mt-5 flex items-center justify-between rounded-xl border border-neutral-800 p-4 text-sm font-medium text-neutral-300"
             >
-              <ShoppingBag size={20} />
-              Shopping Cart
+              <span className="flex items-center gap-3">
+                <ShoppingBag size={20} />
+                Shopping Cart
+              </span>
+              <span className="flex h-6 min-w-6 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[11px] font-bold text-white">
+                {totalItems}
+              </span>
             </Link>
           </div>
         )}

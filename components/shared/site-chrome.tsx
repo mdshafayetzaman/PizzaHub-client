@@ -7,6 +7,7 @@ import 'react-toastify/dist/ReactToastify.css'
 
 import Footer from '@/components/shared/footer'
 import Navbar from '@/components/shared/Navbar'
+import { CartProvider } from '@/lib/cart-context'
 
 /**
  * Shows the marketing navbar/footer on public pages and lets the dashboard
@@ -18,19 +19,19 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
 
   if (isDashboard) {
     return (
-      <>
+      <CartProvider>
         {children}
         <ToastContainer position="top-right" theme="dark" />
-      </>
+      </CartProvider>
     )
   }
 
   return (
-    <>
+    <CartProvider>
       <Navbar />
       {children}
       <Footer />
       <ToastContainer position="top-right" theme="dark" />
-    </>
+    </CartProvider>
   )
 }

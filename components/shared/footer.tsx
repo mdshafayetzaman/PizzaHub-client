@@ -1,6 +1,5 @@
 import Link from "next/link"
 import {
-  ArrowUpRight,
   Clock3,
   Flame,
   Mail,
@@ -75,18 +74,6 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button
-              nativeButton={false}
-              render={<Link href="/browse-menu" />}
-              className="group h-12 rounded-full bg-orange-500 px-6 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/35"
-            >
-              Order now
-              <ArrowUpRight
-                className="size-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                aria-hidden
-              />
-            </Button>
-
             <Button
               nativeButton={false}
               variant="outline"

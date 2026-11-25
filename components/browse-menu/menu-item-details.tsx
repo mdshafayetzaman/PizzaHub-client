@@ -10,7 +10,9 @@ import {
   ShoppingBag,
   Star,
 } from 'lucide-react'
+import { toast } from 'react-toastify'
 
+import { useCart } from '@/lib/cart-context'
 import { formatPrice, type MenuItem } from '@/lib/data'
 
 type MenuItemDetailsProps = {
@@ -23,6 +25,7 @@ export default function MenuItemDetails({
   onAddToCart,
 }: MenuItemDetailsProps) {
   const [quantity, setQuantity] = useState(1)
+  const { addItem } = useCart()
 
   const handleDecrease = () => {
     setQuantity((current) => Math.max(1, current - 1))
@@ -33,7 +36,14 @@ export default function MenuItemDetails({
   }
 
   const handleAddToCart = () => {
+    if (!item.isAvailable) {
+      toast.error('This item is currently unavailable.')
+      return
+    }
+
+    addItem(item, quantity)
     onAddToCart?.(item, quantity)
+    toast.success(`${quantity} × ${item.name} added to cart.`)
   }
 
   return (
@@ -166,10 +176,11 @@ export default function MenuItemDetails({
               <button
                 type="button"
                 onClick={handleAddToCart}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-orange-500 px-7 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/40"
+                disabled={!item.isAvailable}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-orange-500 px-7 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
               >
                 <ShoppingBag aria-hidden className="size-4.5" />
-                Add to cart
+                {item.isAvailable ? 'Add to cart' : 'Unavailable'}
               </button>
             </div>
           </div>
