@@ -2,6 +2,8 @@
 
 import type { ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 import Footer from '@/components/shared/footer'
 import Navbar from '@/components/shared/Navbar'
@@ -15,7 +17,12 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
   const isDashboard = pathname?.startsWith('/dashboard') ?? false
 
   if (isDashboard) {
-    return <>{children}</>
+    return (
+      <>
+        {children}
+        <ToastContainer position="top-right" theme="dark" />
+      </>
+    )
   }
 
   return (
@@ -23,6 +30,7 @@ export default function SiteChrome({ children }: { children: ReactNode }) {
       <Navbar />
       {children}
       <Footer />
+      <ToastContainer position="top-right" theme="dark" />
     </>
   )
 }

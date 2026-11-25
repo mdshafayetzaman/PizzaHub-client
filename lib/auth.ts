@@ -1,16 +1,15 @@
 import { betterAuth } from 'better-auth'
-import { MongoClient } from 'mongodb'
 import { mongodbAdapter } from '@better-auth/mongo-adapter'
+import { jwt } from 'better-auth/plugins/jwt'
 
-const client = new MongoClient(process.env.MONGO_DB_URL as string)
-
-const db = client.db('pizza-hut')
+import { db, mongoClient } from './mongodb'
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
   database: mongodbAdapter(db, {
-    client,
+    client: mongoClient,
   }),
+  plugins: [jwt()],
   user: {
     additionalFields: {
       role: {
