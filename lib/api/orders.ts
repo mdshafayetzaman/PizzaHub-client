@@ -90,3 +90,30 @@ export async function getOrderById(id: string): Promise<OrderRecord> {
   const payload = await apiFetch<unknown>(`/orders/${id}`, { auth: true })
   return normalizeItem<OrderRecord>(payload)
 }
+
+export type CreateOrderInput = {
+  menuItemId: string
+  pizzaName: string
+  pizzaImage: string
+  category: string
+  basePrice: number
+  customerName: string
+  customerEmail: string
+  phone: string
+  deliveryAddress: string
+  city: string
+  area: string
+  quantity: number
+  size: 'Small' | 'Medium' | 'Large'
+  extraToppings: string[]
+  specialInstructions: string
+}
+
+export async function createOrder(input: CreateOrderInput) {
+  const payload = await apiFetch<unknown>('/orders', {
+    method: 'POST',
+    auth: true,
+    json: input,
+  })
+  return normalizeItem<OrderRecord>(payload)
+}

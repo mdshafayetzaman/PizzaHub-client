@@ -1,30 +1,146 @@
 'use client'
 
-import { Flame } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Flame, SearchX, AlertCircle } from 'lucide-react'
 
 import BrowseMenuFilterBar, {
+  type BrowseMenuFilters,
   type FilterKey,
 } from '@/components/browse-menu/filter-bar'
+import MenuCard from '@/components/browse-menu/menu-card'
+import MenuGridSkeleton from '@/components/browse-menu/menu-grid-skeleton'
+import {
+  getMenuItems,
+  getMenuImage,
+  getMenuName,
+  type MenuItemRecord,
+} from '@/lib/api/menu'
+import { MENU_ITEMS, type MenuItem } from '@/lib/data'
 
-const BrowseMenuPage = () => {
+const DEFAULT_FILTERS: BrowseMenuFilters = {
+  query: '',
+  category: 'all',
+  price: 'any',
+  rating: 'any',
+  sort: 'popular',
+}
+
+function toMenuItem(record: MenuItemRecord, index: number): MenuItem | null {
+  const name = getMenuName(record)
+  const image = getMenuImage(record)
+  const price = Number(record.price)
+  if (!name || !image || Number.isNaN(price)) return null
+
+  const category = String(record.category || 'Classic') as MenuItem['category']
+  const rating = Number(record.rating) || 4.5
+  const reviews = Number(record.reviews) || 0
+  const prepTime = String(record.preparationTime || '15-20 min')
+  const status = String(record.status || record.approvalStatus || 'active').toLowerCase()
+
+  return {
+    id: String(record._id || record.id || `api-${index}`),
+    name,
+    description: String(record.description || 'Delicious pizza made fresh to order.'),
+    price,
+    category,
+    image,
+    rating,
+    reviews,
+    popular: Boolean(record.popular),
+    toppings: Array.isArray(record.toppings) ? record.toppings.map(String) : [],
+    calories: Number(record.calories) || 0,
+    prepTime,
+    isAvailable: status !== 'inactive' && status !== 'unavailable',
+  }
+}
+
+function applyFilters(items: MenuItem[], filters: BrowseMenuFilters) {
+  const query = filters.query.trim().toLowerCase()
+
+  let result = items.filter((item) => {
+    const matchesQuery =
+      !query ||
+      item.name.toLowerCase().includes(query) ||
+      item.description.toLowerCase().includes(query) ||
+      item.category.toLowerCase().includes(query)
+
+    const matchesCategory = filters.category === 'all' || item.category === filters.category
+
+    const matchesPrice =
+      filters.price === 'any' ||
+      (filters.price === 'under-15' && item.price < 15) ||
+      (filters.price === '15-25' && item.price >= 15 && item.price <= 25) ||
+      (filters.price === 'over-25' && item.price > 25)
+
+    const matchesRating =
+      filters.rating === 'any' || item.rating >= Number(filters.rating)
+
+    return matchesQuery && matchesCategory && matchesPrice && matchesRating
+  })
+
+  result = [...result].sort((a, b) => {
+    switch (filters.sort) {
+      case 'price-asc':
+        return a.price - b.price
+      case 'price-desc':
+        return b.price - a.price
+      case 'rating':
+        return b.rating - a.rating || b.reviews - a.reviews
+      case 'newest':
+        return Number(b.id) - Number(a.id)
+      case 'popular':
+      default:
+        return Number(Boolean(b.popular)) - Number(Boolean(a.popular)) || b.rating - a.rating
+    }
+  })
+
+  return result
+}
+
+export default function BrowseMenuPage() {
+  const [items, setItems] = useState<MenuItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [filters, setFilters] = useState<BrowseMenuFilters>(DEFAULT_FILTERS)
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const data = await getMenuItems()
+        const mapped = Array.isArray(data)
+          ? data
+              .map((item, i) => toMenuItem(item, i))
+              .filter((item): item is MenuItem => Boolean(item))
+          : []
+        setItems(mapped.length > 0 ? mapped : MENU_ITEMS)
+      } catch {
+        setItems(MENU_ITEMS)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    void load()
+  }, [])
+
+  const filteredItems = useMemo(() => applyFilters(items, filters), [items, filters])
+
   const handleSearch = (query: string) => {
-    void query
-    // TODO: wire search query to URL params
+    setFilters((prev) => ({ ...prev, query }))
   }
 
   const handleFilterChange = (key: FilterKey, value: string) => {
-    void key
-    void value
-    // TODO: wire filter changes to URL params
+    setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
   const handleClear = () => {
-    // TODO: clear URL params
+    setFilters(DEFAULT_FILTERS)
   }
 
   return (
     <main className="relative isolate overflow-hidden bg-[#11100F] text-white">
-      {/* Background atmosphere */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -right-40 -top-24 size-[34rem] rounded-full bg-orange-600/15 blur-[140px]" />
         <div className="absolute -left-40 top-1/3 size-[30rem] rounded-full bg-orange-500/10 blur-[130px]" />
@@ -55,10 +171,37 @@ const BrowseMenuPage = () => {
           />
         </div>
 
-        {/* Menu results grid goes here */}
+        <section aria-label="Menu items" className="mt-10">
+          {loading ? (
+            <MenuGridSkeleton />
+          ) : error ? (
+            <div className="rounded-3xl border border-red-500/20 bg-red-500/10 p-8 text-center">
+              <AlertCircle className="mx-auto size-10 text-red-400" />
+              <h2 className="mt-4 text-lg font-bold text-white">Unable to load menu</h2>
+              <p className="mt-2 text-sm text-red-200/80">{error}</p>
+            </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="rounded-3xl border border-white/10 bg-[#1A1917]/60 p-10 text-center">
+              <SearchX className="mx-auto size-10 text-neutral-500" />
+              <h2 className="mt-4 text-lg font-bold text-white">No pizzas found</h2>
+              <p className="mt-2 text-sm text-neutral-400">
+                Try adjusting your search or filters to find what you’re craving.
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className="mb-5 text-sm text-neutral-400">
+                Showing <span className="font-semibold text-white">{filteredItems.length}</span> item{filteredItems.length === 1 ? '' : 's'}
+              </p>
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {filteredItems.map((item) => (
+                  <MenuCard key={item.id} item={item} />
+                ))}
+              </div>
+            </>
+          )}
+        </section>
       </div>
     </main>
   )
 }
-
-export default BrowseMenuPage

@@ -25,24 +25,54 @@ type ApiFetchOptions = RequestInit & {
 }
 
 async function getJwtToken(): Promise<string | null> {
-  try {
-    const anyClient = authClient as unknown as {
-      token?: () => Promise<{ data?: { token?: string }; error?: unknown }>
-      $fetch?: (
-        path: string,
-        options?: Record<string, unknown>
-      ) => Promise<{ data?: { token?: string }; error?: unknown }>
-    }
+  const anyClient = authClient as unknown as {
+    token?: () => Promise<{ data?: { token?: string }; error?: unknown }>
+    $fetch?: (
+      path: string,
+      options?: Record<string, unknown>
+    ) => Promise<{ data?: { token?: string }; error?: unknown }>
+  }
 
+  try {
     if (typeof anyClient.token === 'function') {
       const res = await anyClient.token()
-      return res?.data?.token ?? null
+      if (res?.data?.token) return res.data.token
     }
+  } catch {
+    // Continue to fallbacks.
+  }
 
+  try {
     if (typeof anyClient.$fetch === 'function') {
       const res = await anyClient.$fetch('/token', { method: 'GET' })
-      return res?.data?.token ?? null
+      if (res?.data?.token) return res.data.token
     }
+  } catch {
+    // Continue to fallbacks.
+  }
+
+  try {
+    const res = await fetch('/api/auth/token', {
+      method: 'GET',
+      credentials: 'include',
+    })
+    if (res.ok) {
+      const data = (await res.json().catch(() => null)) as { token?: string } | null
+      if (data?.token) return data.token
+    }
+  } catch {
+    // Continue to fallbacks.
+  }
+
+  // Fallback: better-auth jwt plugin sets `set-auth-jwt` header on get-session.
+  try {
+    const res = await fetch('/api/auth/get-session', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Cache-Control': 'no-cache' },
+    })
+    const headerToken = res.headers.get('set-auth-jwt')
+    if (headerToken) return headerToken
   } catch {
     // Fall back to cookie-based auth when JWT token endpoint is unavailable.
   }
@@ -74,8 +104,8 @@ function messageFromPayload(payload: unknown, fallback: string) {
   if (typeof record.message === 'string' && record.message) return record.message
   if (typeof record.error === 'string' && record.error) return record.error
   const err = record.error
-  if (err && typeof err === 'object' && typeof (err as any).message === 'string') {
-    return (err as any).message
+  if (err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+    return (err as { message: string }).message
   }
   return fallback
 }
@@ -91,15 +121,21 @@ export async function apiFetch<T = unknown>(
   if (json !== undefined && !finalHeaders.has('Content-Type')) {
     finalHeaders.set('Content-Type', 'application/json')
   }
+  let hasAuthToken = false
   if (auth) {
     const authHeaders = await getAuthHeaders()
     Object.entries(authHeaders).forEach(([k, v]) => finalHeaders.set(k, v))
+    hasAuthToken = Boolean(authHeaders.Authorization)
+    if (!hasAuthToken) {
+      console.warn('[api-client] No JWT token available for authenticated request:', url)
+    }
   }
 
   const response = await fetch(url, {
     ...rest,
     headers: finalHeaders,
-    credentials: 'include',
+    // Do not forward browser cookies to the Express API; auth uses Bearer JWT.
+    credentials: 'omit',
     body: json !== undefined ? JSON.stringify(json) : rest.body,
   })
 
@@ -108,7 +144,9 @@ export async function apiFetch<T = unknown>(
   if (!response.ok) {
     const fallback =
       response.status === 401
-        ? 'Authentication required. Please sign in again.'
+        ? hasAuthToken
+          ? 'Authentication required. Please sign in again.'
+          : 'Unable to get auth token. Please sign in again.'
         : response.status === 403
           ? 'You do not have permission to perform this action.'
           : response.status === 404
@@ -116,7 +154,13 @@ export async function apiFetch<T = unknown>(
             : response.status >= 500
               ? 'Server error. Please try again later.'
               : 'Request failed.'
-    throw new ApiError(messageFromPayload(payload, fallback), response.status, payload)
+
+    const message =
+      response.status === 401 && !hasAuthToken
+        ? fallback
+        : messageFromPayload(payload, fallback)
+
+    throw new ApiError(message, response.status, payload)
   }
 
   return payload as T

@@ -81,7 +81,7 @@ export default function HeroSection() {
           <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button
               nativeButton={false}
-              render={<Link href="/menu" />}
+              render={<Link href="/browse-menu" />}
               className="group h-13 rounded-full bg-orange-500 px-7 text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/40"
             >
               <ShoppingBag className="size-4.5" aria-hidden />
@@ -95,7 +95,7 @@ export default function HeroSection() {
             <Button
               nativeButton={false}
               variant="outline"
-              render={<Link href="/menu" />}
+              render={<Link href="/browse-menu" />}
               className="group h-13 rounded-full border-white/15 bg-white/[0.03] px-7 text-sm font-semibold text-white backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-orange-500/40 hover:bg-white/[0.06] hover:text-white"
             >
               Explore the menu

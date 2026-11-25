@@ -23,7 +23,7 @@ const footerLinks = [
     title: "Explore",
     links: [
       { label: "Home", href: "/" },
-      { label: "Browse menu", href: "/menu" },
+      { label: "Browse menu", href: "/browse-menu" },
       { label: "Dashboard", href: "/dashboard" },
     ],
   },
@@ -77,7 +77,7 @@ export default function Footer() {
           <div className="flex flex-wrap items-center gap-3">
             <Button
               nativeButton={false}
-              render={<Link href="/menu" />}
+              render={<Link href="/browse-menu" />}
               className="group h-12 rounded-full bg-orange-500 px-6 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/35"
             >
               Order now

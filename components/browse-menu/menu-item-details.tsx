@@ -55,6 +55,15 @@ export default function MenuItemDetails({
           <span className="rounded-full border border-orange-500/30 bg-[#11100F]/80 px-3 py-1.5 text-[11px] font-bold tracking-[0.14em] text-orange-400 uppercase backdrop-blur">
             {item.category}
           </span>
+          <span
+            className={`rounded-full px-3 py-1.5 text-[11px] font-bold tracking-[0.14em] uppercase backdrop-blur ${
+              item.isAvailable
+                ? 'border border-emerald-500/30 bg-emerald-500/20 text-emerald-300'
+                : 'border border-white/10 bg-zinc-700/70 text-zinc-300'
+            }`}
+          >
+            {item.isAvailable ? 'Available' : 'Unavailable'}
+          </span>
           {item.popular ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3 py-1.5 text-[11px] font-bold tracking-[0.14em] text-white uppercase">
               <Flame aria-hidden className="size-3.5" />

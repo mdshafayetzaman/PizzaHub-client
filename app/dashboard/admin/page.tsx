@@ -19,25 +19,43 @@ export default function AdminOverviewPage() {
   const [transactions, setTransactions] = useState<TransactionRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [loadErrors, setLoadErrors] = useState<string[]>([])
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true)
         setError('')
-        const [u, m, t] = await Promise.allSettled([getAllUsers(), getAllMenuItemsAdmin(), getTransactions()])
+        setLoadErrors([])
+
+        const [u, m, t] = await Promise.allSettled([
+          getAllUsers(),
+          getAllMenuItemsAdmin(),
+          getTransactions(),
+        ])
+
         if (u.status === 'fulfilled') setUsers(u.value)
         if (m.status === 'fulfilled') setMenuItems(m.value)
         if (t.status === 'fulfilled') setTransactions(t.value)
-        const failures = [u, m, t].filter((r) => r.status === 'rejected').length
-        if (failures === 3) setError('Unable to load admin dashboard data. Please verify backend admin endpoints are available.')
-        else if (failures > 0) toast.error('Some admin dashboard data could not be loaded.')
+
+        const failures: string[] = []
+        if (u.status === 'rejected') failures.push(`Users: ${getErrorMessage(u.reason)}`)
+        if (m.status === 'rejected') failures.push(`Menu: ${getErrorMessage(m.reason)}`)
+        if (t.status === 'rejected') failures.push(`Transactions: ${getErrorMessage(t.reason)}`)
+
+        if (failures.length === 3) {
+          setError('Unable to load admin dashboard data. Please verify backend admin endpoints are available.')
+        } else if (failures.length > 0) {
+          setLoadErrors(failures)
+          toast.error('Some admin dashboard data could not be loaded.')
+        }
       } catch (e) {
         setError(getErrorMessage(e))
       } finally {
         setLoading(false)
       }
     }
+
     void load()
   }, [])
 
@@ -63,7 +81,26 @@ export default function AdminOverviewPage() {
         <p className="mt-2 text-sm text-zinc-400">Monitor users, menu submissions, and transactions across PizzaHub.</p>
       </div>
 
-      {error ? <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300 flex items-center gap-2"><AlertCircle size={18} />{error}</div> : null}
+      {error ? (
+        <div className="mb-6 flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
+          <AlertCircle size={18} />
+          {error}
+        </div>
+      ) : null}
+
+      {loadErrors.length > 0 ? (
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-amber-200">
+          <div className="flex items-center gap-2 font-semibold">
+            <AlertCircle size={18} />
+            Some admin dashboard data could not be loaded.
+          </div>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-amber-100/90">
+            {loadErrors.map((msg) => (
+              <li key={msg}>{msg}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
         {loading ? Array.from({ length: 6 }).map((_, i) => <StatSkeleton key={i} />) : (

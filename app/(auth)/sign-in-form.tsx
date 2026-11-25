@@ -11,8 +11,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export default function SignInForm() {
+type SignInFormProps = {
+  callbackUrl?: string
+}
+
+function getSafeCallbackUrl(callbackUrl?: string) {
+  if (!callbackUrl) return '/'
+  if (!callbackUrl.startsWith('/') || callbackUrl.startsWith('//')) return '/'
+  return callbackUrl
+}
+
+export default function SignInForm({ callbackUrl }: SignInFormProps) {
   const router = useRouter()
+  const safeCallbackUrl = getSafeCallbackUrl(callbackUrl)
 
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -35,7 +46,7 @@ export default function SignInForm() {
         email,
         password,
         rememberMe,
-        callbackURL: '/',
+        callbackURL: safeCallbackUrl,
       })
 
       if (error) {
@@ -43,7 +54,7 @@ export default function SignInForm() {
         return
       }
 
-      router.push('/')
+      router.push(safeCallbackUrl)
       router.refresh()
     } catch {
       setErrorMessage('Something went wrong. Please try again.')
