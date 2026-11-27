@@ -24,6 +24,7 @@ export interface OrderRecord {
   message?: string
   additionalMessage?: string
   status?: OrderStatus
+  isDemo?: boolean
   createdAt?: string
   requestDate?: string
   [key: string]: unknown
@@ -107,6 +108,7 @@ export type CreateOrderInput = {
   size: 'Small' | 'Medium' | 'Large'
   extraToppings: string[]
   specialInstructions: string
+  deliveryDate: string
 }
 
 export async function createOrder(input: CreateOrderInput) {

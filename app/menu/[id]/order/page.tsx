@@ -1,4 +1,6 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 
 import OrderFormClient from '@/components/order/OrderFormClient'
 import { getCurrentUser } from '@/lib/session'
@@ -7,10 +9,25 @@ type OrderPageProps = {
   params: Promise<{ id: string }>
 }
 
-export default async function MenuOrderPage({ params }: OrderPageProps) {
+function OrderLoading() {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-[#1A1917]/90 p-8 text-center">
+      <Loader2 className="mx-auto size-10 animate-spin text-orange-500" />
+      <p className="mt-4 text-sm text-neutral-400">Loading order details...</p>
+    </div>
+  )
+}
+
+async function OrderContent({ params }: OrderPageProps) {
   const { id } = await params
-  const user = await getCurrentUser()
-  const orderPath = `/menu/${id}/order`
+  const orderPath = `/menu/${encodeURIComponent(id)}/order`
+
+  let user: Awaited<ReturnType<typeof getCurrentUser>> = null
+  try {
+    user = await getCurrentUser()
+  } catch (error) {
+    console.error('[menu/[id]/order] Failed to resolve current user', error)
+  }
 
   if (!user) {
     redirect(`/sign-in?callbackUrl=${encodeURIComponent(orderPath)}`)
@@ -20,6 +37,10 @@ export default async function MenuOrderPage({ params }: OrderPageProps) {
     redirect('/browse-menu')
   }
 
+  return <OrderFormClient pizzaId={id} user={{ name: user.name || '', email: user.email || '' }} />
+}
+
+export default function MenuOrderPage({ params }: OrderPageProps) {
   return (
     <main className="relative isolate overflow-hidden bg-[#11100F] text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
@@ -40,7 +61,9 @@ export default async function MenuOrderPage({ params }: OrderPageProps) {
           </p>
         </div>
 
-        <OrderFormClient pizzaId={id} user={{ name: user.name, email: user.email }} />
+        <Suspense fallback={<OrderLoading />}>
+          <OrderContent params={params} />
+        </Suspense>
       </div>
     </main>
   )

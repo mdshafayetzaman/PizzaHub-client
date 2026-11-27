@@ -127,6 +127,7 @@ export default function AdminMenuPage() {
                         <div className="flex items-center gap-3">
                           {getMenuImage(item) ? <img src={getMenuImage(item)} alt="" className="h-11 w-11 rounded-xl object-cover border border-white/10" /> : <div className="h-11 w-11 rounded-xl bg-white/5 border border-white/10" />}
                           <span className="font-semibold text-white">{getMenuName(item)}</span>
+                          {Boolean(item.isDemo) ? <span className="rounded-full border border-amber-400/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-300">Demo</span> : null}
                         </div>
                       </td>
                       <td className="px-3 py-4 text-sm text-zinc-300">{item.vendorName || item.vendorEmail || 'N/A'}</td>

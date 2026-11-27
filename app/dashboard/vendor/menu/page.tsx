@@ -171,7 +171,10 @@ export default function VendorMenuPage() {
                         <div className="flex items-center gap-3">
                           {getMenuImage(item) ? <img src={getMenuImage(item)} alt="" className="h-11 w-11 rounded-xl object-cover border border-white/10" /> : <div className="h-11 w-11 rounded-xl bg-white/5 border border-white/10" />}
                           <div>
-                            <p className="font-semibold text-white">{getMenuName(item)}</p>
+                            <p className="flex items-center gap-2 font-semibold text-white">
+                              {getMenuName(item)}
+                              {Boolean(item.isDemo) ? <span className="rounded-full border border-amber-400/30 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-amber-300">Demo</span> : null}
+                            </p>
                             <p className="text-xs text-zinc-500 line-clamp-1 max-w-[260px]">{item.location || item.description || ''}</p>
                           </div>
                         </div>

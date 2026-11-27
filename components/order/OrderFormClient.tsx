@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { AlertCircle, Loader2, RefreshCw } from 'lucide-react'
 
 import OrderForm from './OrderForm'
-import { getMenuItemById, getMenuImage, getMenuName } from '@/lib/api/menu'
+import { getMenuItemById, getMenuItems, getMenuImage, getMenuName } from '@/lib/api/menu'
 import { getMenuItem, type MenuItem } from '@/lib/data'
 
 type OrderFormClientProps = {
@@ -22,8 +22,11 @@ function toMenuItem(
   const price = Number(record.price)
   if (!name || !image || Number.isNaN(price)) return null
 
+  const resolvedId = String(record._id || record.id || id)
+  const hasRealId = /^[a-fA-F0-9]{24}$/.test(String(record._id || record.id || ''))
+
   return {
-    id: String(record._id || record.id || id),
+    id: resolvedId,
     name,
     description: record.description || 'Delicious pizza made fresh to order.',
     price,
@@ -37,6 +40,7 @@ function toMenuItem(
     isAvailable:
       String(record.status || record.approvalStatus || 'active').toLowerCase() !==
       'inactive',
+    isDemo: Boolean((record as { isDemo?: unknown }).isDemo) && !hasRealId,
   }
 }
 
@@ -44,6 +48,7 @@ export default function OrderFormClient({ pizzaId, user }: OrderFormClientProps)
   const [pizza, setPizza] = useState<MenuItem | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [isLocalOnly, setIsLocalOnly] = useState(false)
 
   const loadPizza = useCallback(async () => {
     try {
@@ -51,21 +56,70 @@ export default function OrderFormClient({ pizzaId, user }: OrderFormClientProps)
       const mapped = toMenuItem(record, pizzaId)
       if (mapped) {
         setPizza(mapped)
+        setIsLocalOnly(false)
         setError('')
         return
       }
     } catch {
-      // Fall back to local catalog data.
+      // Continue to DB/local resolution fallback.
     }
 
     const local = getMenuItem(pizzaId)
+
+    // If the route ID is a local/demo ID, try to resolve the real DB menu item
+    // by matching against live menu items so order submission uses a valid _id.
+    try {
+      const allItems = await getMenuItems()
+      const dbMatch = Array.isArray(allItems)
+        ? allItems.find((record) => {
+            const recordId = String(record._id || record.id || '')
+            if (recordId && recordId === pizzaId) return true
+            if (!local) return false
+            const recordName = getMenuName(record).trim().toLowerCase()
+            return recordName && recordName === local.name.trim().toLowerCase()
+          })
+        : undefined
+
+      if (dbMatch) {
+        const mappedDb = toMenuItem(dbMatch, pizzaId)
+        if (mappedDb) {
+          setPizza(mappedDb)
+          setIsLocalOnly(false)
+          setError('')
+          return
+        }
+      }
+    } catch {
+      // Ignore DB lookup failure; fall back below.
+    }
+
     if (local) {
-      setPizza(local)
-      setError('')
+      // Last attempt: resolve by name from DB so seeded demo items get real ObjectIds.
+      try {
+        const allItems = await getMenuItems()
+        const byName = Array.isArray(allItems)
+          ? allItems.find((record) => getMenuName(record).trim().toLowerCase() === local.name.trim().toLowerCase())
+          : undefined
+        if (byName) {
+          const mappedDb = toMenuItem(byName, pizzaId)
+          if (mappedDb) {
+            setPizza(mappedDb)
+            setIsLocalOnly(false)
+            setError('')
+            return
+          }
+        }
+      } catch {
+        // ignore
+      }
+      setPizza(null)
+      setIsLocalOnly(false)
+      setError('This menu item is not available right now. Please refresh the page and try again.')
       return
     }
 
     setPizza(null)
+    setIsLocalOnly(false)
     setError('Pizza not found. It may have been removed or is unavailable.')
   }, [pizzaId])
 
@@ -119,5 +173,5 @@ export default function OrderFormClient({ pizzaId, user }: OrderFormClientProps)
     )
   }
 
-  return <OrderForm pizza={pizza} user={user} />
+  return <OrderForm pizza={pizza} user={user} isLocalOnly={isLocalOnly} />
 }

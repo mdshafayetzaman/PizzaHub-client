@@ -15,7 +15,9 @@ import {
   getMenuName,
   type MenuItemRecord,
 } from '@/lib/api/menu'
-import type { MenuItem } from '@/lib/data'
+import { MENU_ITEMS, type MenuItem } from '@/lib/data'
+
+const DEMO_MENU_ITEMS: MenuItem[] = MENU_ITEMS.map((item) => ({ ...item, isDemo: true }))
 
 function toMenuItem(record: MenuItemRecord, index: number): MenuItem | null {
   const name = getMenuName(record)
@@ -28,8 +30,11 @@ function toMenuItem(record: MenuItemRecord, index: number): MenuItem | null {
   const reviewsValue = Number(record.reviews)
   const status = String(record.status || record.approvalStatus || 'active').toLowerCase()
 
+  const id = String(record._id || record.id || `api-${index}`)
+  const hasRealId = /^[a-fA-F0-9]{24}$/.test(String(record._id || record.id || ''))
+
   return {
-    id: String(record._id || record.id || `api-${index}`),
+    id,
     name,
     description: String(record.description || 'Delicious pizza made fresh to order.'),
     price,
@@ -42,6 +47,7 @@ function toMenuItem(record: MenuItemRecord, index: number): MenuItem | null {
     calories: Number(record.calories) || 0,
     prepTime: String(record.preparationTime || '15-20 min'),
     isAvailable: status !== 'inactive' && status !== 'unavailable' && status !== 'rejected',
+    isDemo: Boolean(record.isDemo) && !hasRealId,
   }
 }
 
@@ -62,11 +68,11 @@ export default function BrowseMenuPage() {
       const mapped = Array.isArray(data)
         ? data.map((item, i) => toMenuItem(item, i)).filter((item): item is MenuItem => item !== null)
         : []
-      setItems(mapped)
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to load menu items.'
-      setError(message)
-      setItems([])
+      setItems(mapped.length > 0 ? mapped : DEMO_MENU_ITEMS)
+    } catch {
+      // Fall back to realistic static data so the menu is always browsable.
+      setItems(DEMO_MENU_ITEMS)
+      setError('')
     } finally {
       setLoading(false)
     }

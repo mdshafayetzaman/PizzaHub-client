@@ -19,8 +19,11 @@ function toMenuItem(record: Awaited<ReturnType<typeof getMenuItemById>>, id: str
 
   if (!name || !image || Number.isNaN(price)) return null
 
+  const resolvedId = String(record._id || record.id || id)
+  const hasRealId = /^[a-fA-F0-9]{24}$/.test(String(record._id || record.id || ''))
+
   return {
-    id: String(record._id || record.id || id),
+    id: resolvedId,
     name,
     description: record.description || 'Delicious pizza made fresh to order.',
     price,
@@ -32,19 +35,20 @@ function toMenuItem(record: Awaited<ReturnType<typeof getMenuItemById>>, id: str
     calories: 0,
     prepTime: record.preparationTime || '15-20 min',
     isAvailable: String(record.status || record.approvalStatus || 'active').toLowerCase() !== 'inactive',
+    isDemo: Boolean((record as { isDemo?: unknown }).isDemo) && !hasRealId,
   }
 }
 
 async function resolveMenuItem(id: string): Promise<MenuItem | null> {
-  const localItem = getMenuItem(id)
-  if (localItem) return localItem
-
   try {
     const record = await getMenuItemById(id)
-    return toMenuItem(record, id)
+    const mapped = toMenuItem(record, id)
+    if (mapped) return mapped
   } catch {
-    return null
+    // Fall back to local catalog data.
   }
+
+  return getMenuItem(id) ?? null
 }
 
 export default async function MenuDetailsPage({

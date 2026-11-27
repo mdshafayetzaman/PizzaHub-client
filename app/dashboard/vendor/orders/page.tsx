@@ -168,6 +168,11 @@ export default function VendorOrdersPage() {
                     <div className="space-y-2 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-bold text-white">{itemName}</h3>
+                        {order.isDemo ? (
+                          <span className="rounded-full border border-amber-400/30 bg-amber-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300">
+                            Demo
+                          </span>
+                        ) : null}
                         <StatusPill status={status} />
                       </div>
                       <p className="text-sm text-zinc-300"><span className="text-zinc-500">Customer:</span> {customerName}{customerEmail ? <span className="text-zinc-500"> ({customerEmail})</span> : null}</p>

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { toast } from '@/lib/toast'
 import {
+  AlertCircle,
   CheckCircle2,
   Loader2,
   MapPin,
@@ -30,6 +31,7 @@ type OrderFormProps = {
     name: string
     email: string
   }
+  isLocalOnly?: boolean
 }
 
 type FormState = {
@@ -39,6 +41,7 @@ type FormState = {
   deliveryAddress: string
   city: string
   area: string
+  deliveryDate: string
   quantity: number
   size: PizzaSize
   extraToppings: string[]
@@ -50,7 +53,7 @@ const inputClass =
 
 const labelClass = 'mb-2 block text-sm font-semibold text-neutral-200'
 
-export default function OrderForm({ pizza, user }: OrderFormProps) {
+export default function OrderForm({ pizza, user, isLocalOnly = false }: OrderFormProps) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState<FormState>({
@@ -60,6 +63,7 @@ export default function OrderForm({ pizza, user }: OrderFormProps) {
     deliveryAddress: '',
     city: '',
     area: '',
+    deliveryDate: '',
     quantity: 1,
     size: 'Medium',
     extraToppings: [],
@@ -97,6 +101,8 @@ export default function OrderForm({ pizza, user }: OrderFormProps) {
     if (!form.deliveryAddress.trim()) return 'Delivery address is required.'
     if (!form.city.trim()) return 'City is required.'
     if (!form.area.trim()) return 'Area is required.'
+    if (!form.deliveryDate) return 'Delivery date is required.'
+    if (Number.isNaN(new Date(form.deliveryDate).getTime())) return 'Delivery date must be valid.'
     if (!Number.isInteger(form.quantity) || form.quantity < 1 || form.quantity > 20) {
       return 'Quantity must be between 1 and 20.'
     }
@@ -126,6 +132,7 @@ export default function OrderForm({ pizza, user }: OrderFormProps) {
           deliveryAddress: form.deliveryAddress.trim(),
           city: form.city.trim(),
           area: form.area.trim(),
+          deliveryDate: form.deliveryDate,
           quantity: form.quantity,
           size: form.size,
           extraToppings: form.extraToppings,
@@ -133,9 +140,8 @@ export default function OrderForm({ pizza, user }: OrderFormProps) {
         }),
         {
           loading: 'Placing your order...',
-          success: (result) => {
-            const orderId = String((result as { _id?: string; id?: string })._id || (result as { id?: string }).id || '')
-            router.push(orderId ? `/order/success?orderId=${encodeURIComponent(orderId)}` : '/order/success')
+          success: () => {
+            router.push('/dashboard/customers/orders')
             router.refresh()
             return 'Order placed successfully!'
           },
@@ -177,6 +183,10 @@ export default function OrderForm({ pizza, user }: OrderFormProps) {
           <div>
             <label htmlFor="area" className={labelClass}>Area</label>
             <input id="area" value={form.area} onChange={(e) => setField('area', e.target.value)} className={inputClass} placeholder="Area / Neighborhood" required />
+          </div>
+          <div>
+            <label htmlFor="deliveryDate" className={labelClass}>Delivery Date</label>
+            <input id="deliveryDate" type="date" value={form.deliveryDate} onChange={(e) => setField('deliveryDate', e.target.value)} className={inputClass} required />
           </div>
           <div>
             <label htmlFor="quantity" className={labelClass}>Quantity</label>

@@ -37,6 +37,8 @@ export type MenuItem = {
   calories: number
   prepTime: string
   isAvailable: boolean
+  /** True for local/demo catalog items that have no real MongoDB _id. */
+  isDemo?: boolean
 }
 
 export const MENU_ITEMS: MenuItem[] = [

@@ -24,7 +24,12 @@ export default function MenuCard({ item }: MenuCardProps) {
 
   const handleViewDetails = () => {
     if (isPending) return
-    router.push(`/browse-menu/${item.id}`)
+    const detailsPath = `/browse-menu/${item.id}`
+    if (!session?.user) {
+      router.push(`/sign-in?callbackUrl=${encodeURIComponent(detailsPath)}`)
+      return
+    }
+    router.push(detailsPath)
   }
 
   const handleAddToCart = () => {
