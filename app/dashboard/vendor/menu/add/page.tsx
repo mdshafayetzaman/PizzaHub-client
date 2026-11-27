@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Pizza, PlusCircle, ImagePlus, Utensils, DollarSign, Tag, FileText, Sparkles, MapPin, Upload, Loader2 } from 'lucide-react'
+import { ArrowLeft, Pizza, PlusCircle, ImagePlus, Utensils, DollarSign, Tag, FileText, Sparkles, MapPin, Upload, Loader2, XCircle } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
 import { createMenuItem } from '@/lib/api/menu'
@@ -18,24 +18,92 @@ const categories = [
   { value: 'Special', label: 'Special Pizza' },
 ]
 
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
+const ACCEPTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp']
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024
+
 const inputClass = 'w-full min-h-[54px] rounded-xl border border-zinc-300 bg-zinc-100 px-4 py-3 text-sm font-medium text-zinc-900 placeholder:text-zinc-500 outline-none transition-all duration-300 focus:border-red-500 focus:bg-white focus:ring-4 focus:ring-red-500/10'
 const labelClass = 'mb-2.5 flex items-center gap-2 text-sm font-semibold text-zinc-200'
 
+function validateImageFile(file: File): string | null {
+  const fileName = file.name.toLowerCase()
+  const hasValidType = ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])
+  const hasValidExtension = ACCEPTED_IMAGE_EXTENSIONS.some((ext) => fileName.endsWith(ext))
+
+  if (!hasValidType && !hasValidExtension) {
+    return 'Please select a valid image file (JPG, JPEG, PNG, or WEBP).'
+  }
+
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    return 'Image size must be 5MB or less.'
+  }
+
+  return null
+}
+
 export default function AddMenuItemPage() {
   const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const previewObjectUrlRef = useRef<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [imageUrl, setImageUrl] = useState('')
+  const [imagePreview, setImagePreview] = useState('')
+  const [selectedFileName, setSelectedFileName] = useState('')
+  const [uploadError, setUploadError] = useState('')
+
+  const clearPreviewObjectUrl = () => {
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current)
+      previewObjectUrlRef.current = null
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      clearPreviewObjectUrl()
+    }
+  }, [])
 
   const handleImageUpload = async (file?: File) => {
     if (!file) return
+
+    setUploadError('')
+    setImageUrl('')
+
+    const validationError = validateImageFile(file)
+    if (validationError) {
+      setSelectedFileName('')
+      setImagePreview('')
+      clearPreviewObjectUrl()
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      setUploadError(validationError)
+      toast.error(validationError)
+      return
+    }
+
+    clearPreviewObjectUrl()
+    const localPreview = URL.createObjectURL(file)
+    previewObjectUrlRef.current = localPreview
+    setImagePreview(localPreview)
+    setSelectedFileName(file.name)
+
     try {
       setUploading(true)
       const url = await uploadImageToImgBB(file)
       setImageUrl(url)
+      setImagePreview(url)
+      clearPreviewObjectUrl()
       toast.success('Image uploaded successfully.')
     } catch (e) {
-      toast.error(getErrorMessage(e, 'Image upload failed.'))
+      const message = getErrorMessage(e, 'Image upload failed.')
+      clearPreviewObjectUrl()
+      setImageUrl('')
+      setImagePreview('')
+      setSelectedFileName('')
+      setUploadError(message)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      toast.error(message)
     } finally {
       setUploading(false)
     }
@@ -51,9 +119,33 @@ export default function AddMenuItemPage() {
     const description = String(formData.get('description') || '').trim()
     const location = String(formData.get('location') || '').trim()
     const price = Number(formData.get('price'))
-    const finalImageUrl = String(formData.get('imageUrl') || imageUrl || '').trim()
+    const finalImageUrl = imageUrl.trim()
 
-    if (!pizzaName || !category || !description || !location || !finalImageUrl || !Number.isFinite(price) || price <= 0) {
+    if (uploading) {
+      toast.error('Please wait for the image upload to finish.')
+      return
+    }
+
+    if (!finalImageUrl) {
+      const message = 'Item image is required. Please upload an image before submitting.'
+      setUploadError(message)
+      toast.error(message)
+      return
+    }
+
+    try {
+      const parsedUrl = new URL(finalImageUrl)
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+        throw new Error('Invalid image URL protocol.')
+      }
+    } catch {
+      const message = 'Uploaded image URL is invalid. Please upload the image again.'
+      setUploadError(message)
+      toast.error(message)
+      return
+    }
+
+    if (!pizzaName || !category || !description || !location || !Number.isFinite(price) || price <= 0) {
       toast.error('Please fill all required fields with valid values.')
       return
     }
@@ -75,12 +167,17 @@ export default function AddMenuItemPage() {
           loading: 'Submitting menu item...',
           success: () => {
             form.reset()
+            clearPreviewObjectUrl()
             setImageUrl('')
+            setImagePreview('')
+            setSelectedFileName('')
+            setUploadError('')
+            if (fileInputRef.current) fileInputRef.current.value = ''
             router.push('/dashboard/vendor/menu')
             router.refresh()
             return `${pizzaName} was submitted for approval.`
           },
-          error: (e) => getErrorMessage(e, 'Failed to create menu item.'),
+          error: (err) => getErrorMessage(err, 'Failed to create menu item.'),
         }
       )
     } finally {
@@ -159,15 +256,57 @@ export default function AddMenuItemPage() {
               </div>
 
               <div>
-                <label htmlFor="imageFile" className={labelClass}><ImagePlus size={16} className="text-red-400" /> Item Image (ImgBB)</label>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <label className="inline-flex min-h-[54px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-zinc-300 hover:bg-white/10">
-                    {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} {uploading ? 'Uploading...' : 'Upload to ImgBB'}
-                    <input id="imageFile" type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => void handleImageUpload(e.target.files?.[0])} />
-                  </label>
-                  <input id="imageUrl" name="imageUrl" type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Or paste image URL" required className={`${inputClass} flex-1`} />
+                <label htmlFor="imageFile" className={labelClass}><ImagePlus size={16} className="text-red-400" /> Item Image <span className="text-red-400">*</span></label>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                    <label className={`inline-flex min-h-[54px] cursor-pointer items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-zinc-300 transition hover:bg-white/10 ${uploading ? 'cursor-not-allowed opacity-70' : ''}`}>
+                      {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                      {uploading ? 'Uploading...' : imageUrl ? 'Change Image' : 'Upload Image'}
+                      <input
+                        ref={fileInputRef}
+                        id="imageFile"
+                        name="imageFile"
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        disabled={uploading || isLoading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          void handleImageUpload(file)
+                        }}
+                      />
+                    </label>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-zinc-300">
+                        {selectedFileName || 'No image selected'}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">JPG, JPEG, PNG, or WEBP. Max size 5MB.</p>
+                    </div>
+                  </div>
+
+                  {uploading ? (
+                    <div className="mt-4 flex items-center gap-2 rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                      <Loader2 size={16} className="animate-spin" />
+                      Uploading image to ImgBB...
+                    </div>
+                  ) : null}
+
+                  {uploadError ? (
+                    <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                      <XCircle size={16} className="mt-0.5 shrink-0" />
+                      <span>{uploadError}</span>
+                    </div>
+                  ) : null}
+
+                  {imagePreview ? (
+                    <div className="mt-4">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        {uploading ? 'Selected Image Preview' : 'Image Preview'}
+                      </p>
+                      <img src={imagePreview} alt="Selected item preview" className="h-32 w-32 rounded-xl border border-white/10 object-cover sm:h-36 sm:w-36" />
+                    </div>
+                  ) : null}
                 </div>
-                {imageUrl ? <img src={imageUrl} alt="Preview" className="mt-3 h-28 w-28 rounded-xl object-cover border border-white/10" /> : null}
               </div>
 
               <div className="grid gap-6 sm:grid-cols-2">
