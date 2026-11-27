@@ -10,21 +10,21 @@ import {
   ImageIcon,
   LockKeyhole,
   Mail,
-  ShieldCheck,
   Store,
   User,
 } from 'lucide-react'
+import { toast } from 'react-toastify'
 
 import AuthToggle from './auth-toggle'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { signUp } from '@/lib/auth-client'
+import { authClient, signIn, signUp } from '@/lib/auth-client'
+import { ROLE_HOME, normalizeRole } from '@/lib/roles'
 
 const roles = [
   { value: 'customer', label: 'Customer', icon: User },
   { value: 'vendor', label: 'Vendor', icon: Store },
-  { value: 'admin', label: 'Admin', icon: ShieldCheck },
 ] as const
 
 export default function SignUpForm() {
@@ -33,7 +33,38 @@ export default function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [socialLoading, setSocialLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+
+  const redirectByRole = async () => {
+    const session = await authClient.getSession()
+    const role = normalizeRole((session?.data?.user as { role?: unknown } | undefined)?.role)
+    router.replace(ROLE_HOME[role])
+    router.refresh()
+  }
+
+  const handleGoogleSignUp = async () => {
+    setErrorMessage('')
+    setSocialLoading(true)
+    try {
+      const { error } = await signIn.social({
+        provider: 'google',
+        callbackURL: '/profile',
+        errorCallbackURL: '/sign-up',
+      })
+      if (error) {
+        const message = error.message || 'Google sign-in failed.'
+        setErrorMessage(message)
+        toast.error(message)
+        setSocialLoading(false)
+      }
+    } catch {
+      const message = 'Google sign-in failed. Please try again.'
+      setErrorMessage(message)
+      toast.error(message)
+      setSocialLoading(false)
+    }
+  }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -44,13 +75,14 @@ export default function SignUpForm() {
     const data = Object.fromEntries(formData.entries())
 
     if (data.password !== data.confirmPassword) {
-      setErrorMessage('Passwords do not match.')
+      const message = 'Passwords do not match.'
+      setErrorMessage(message)
+      toast.error(message)
       return
     }
 
     const roleValue = String(data.role || 'customer')
-    const role: 'customer' | 'vendor' | 'admin' =
-      roleValue === 'vendor' || roleValue === 'admin' ? roleValue : 'customer'
+    const role: 'customer' | 'vendor' = roleValue === 'vendor' ? 'vendor' : 'customer'
 
     try {
       setLoading(true)
@@ -64,18 +96,20 @@ export default function SignUpForm() {
           typeof data.imageUrl === 'string' && data.imageUrl
             ? data.imageUrl
             : undefined,
-        callbackURL: '/',
       })
 
       if (error) {
-        setErrorMessage(error.message || 'Something went wrong.')
+        const message = error.message || 'Something went wrong.'
+        setErrorMessage(message)
+        toast.error(message)
         return
       }
 
-      router.replace('/')
-      router.refresh()
+      await redirectByRole()
     } catch {
-      setErrorMessage('Something went wrong. Please try again.')
+      const message = 'Something went wrong. Please try again.'
+      setErrorMessage(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -125,7 +159,7 @@ export default function SignUpForm() {
             Account type
           </legend>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {roles.map((role) => {
               const Icon = role.icon
 
@@ -301,7 +335,7 @@ export default function SignUpForm() {
 
         <Button
           type="submit"
-          disabled={loading}
+          disabled={loading || socialLoading}
           className="group h-12 w-full rounded-xl bg-orange-500 text-sm font-bold text-white shadow-lg shadow-orange-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/40"
         >
           {loading ? 'Creating account...' : 'Create account'}
@@ -314,6 +348,28 @@ export default function SignUpForm() {
           )}
         </Button>
       </form>
+
+      <div className="my-6 flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/10" />
+        <span className="text-xs font-medium uppercase tracking-[0.2em] text-neutral-500">or</span>
+        <div className="h-px flex-1 bg-white/10" />
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        disabled={loading || socialLoading}
+        onClick={handleGoogleSignUp}
+        className="h-12 w-full rounded-xl border-white/10 bg-white/[0.04] text-sm font-semibold text-white hover:bg-white/[0.08] hover:text-white"
+      >
+        <svg aria-hidden className="size-4" viewBox="0 0 24 24">
+          <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.2 1.2-.9 2.2-1.9 2.9l3 2.3c1.8-1.6 2.8-4 2.8-6.8 0-.7-.1-1.3-.2-1.9H12z"/>
+          <path fill="#34A853" d="M12 22c2.7 0 5-0.9 6.6-2.5l-3-2.3c-.8.6-1.9 1-3.6 1-2.8 0-5.1-1.9-6-4.4H2.9v2.4C4.5 19.8 8 22 12 22z"/>
+          <path fill="#4A90E2" d="M6 13.8c-.2-.6-.4-1.2-.4-1.8s.1-1.2.4-1.8V7.8H2.9A10 10 0 0 0 2 12c0 1.6.4 3.1 1 4.2l3-2.4z"/>
+          <path fill="#FBBC05" d="M12 6.1c1.5 0 2.8.5 3.8 1.5l2.8-2.8C17 3.2 14.7 2 12 2 8 2 4.5 4.2 2.9 7.8l3.1 2.4c.9-2.5 3.2-4.1 6-4.1z"/>
+        </svg>
+        {socialLoading ? 'Connecting to Google...' : 'Continue with Google'}
+      </Button>
 
       <p className="mt-8 text-center text-sm text-neutral-500">
         Already have an account?{' '}

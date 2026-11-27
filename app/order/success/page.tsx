@@ -1,14 +1,12 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { CheckCircle2, ArrowRight, ShoppingBag } from 'lucide-react'
 
 type OrderSuccessPageProps = {
   searchParams: Promise<{ orderId?: string | string[] }>
 }
 
-export default async function OrderSuccessPage({ searchParams }: OrderSuccessPageProps) {
-  const params = await searchParams
-  const orderId = typeof params.orderId === 'string' ? params.orderId : ''
-
+function OrderSuccessContent({ orderId }: { orderId: string }) {
   return (
     <main className="relative isolate overflow-hidden bg-[#11100F] text-white">
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
@@ -55,5 +53,23 @@ export default async function OrderSuccessPage({ searchParams }: OrderSuccessPag
         </div>
       </div>
     </main>
+  )
+}
+
+async function OrderSuccessWithParams({
+  searchParams,
+}: {
+  searchParams: OrderSuccessPageProps['searchParams']
+}) {
+  const params = await searchParams
+  const orderId = typeof params.orderId === 'string' ? params.orderId : ''
+  return <OrderSuccessContent orderId={orderId} />
+}
+
+export default function OrderSuccessPage({ searchParams }: OrderSuccessPageProps) {
+  return (
+    <Suspense fallback={<OrderSuccessContent orderId="" />}>
+      <OrderSuccessWithParams searchParams={searchParams} />
+    </Suspense>
   )
 }

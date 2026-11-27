@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 
 import SignInForm from "../sign-in-form"
 
@@ -12,10 +13,22 @@ type SignInPageProps = {
   searchParams: Promise<{ callbackUrl?: string | string[] }>
 }
 
-export default async function SignInPage({ searchParams }: SignInPageProps) {
+async function SignInFormWithCallback({
+  searchParams,
+}: {
+  searchParams: SignInPageProps["searchParams"]
+}) {
   const params = await searchParams
   const callbackUrl =
     typeof params.callbackUrl === "string" ? params.callbackUrl : undefined
 
   return <SignInForm callbackUrl={callbackUrl} />
+}
+
+export default function SignInPage({ searchParams }: SignInPageProps) {
+  return (
+    <Suspense fallback={<SignInForm />}>
+      <SignInFormWithCallback searchParams={searchParams} />
+    </Suspense>
+  )
 }
