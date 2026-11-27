@@ -1,6 +1,7 @@
 import { MongoClient } from 'mongodb'
 
 const mongoUrl = process.env.MONGO_DB_URL?.trim()
+const mongoDbName = process.env.MONGO_DB_NAME?.trim() || 'pizza-hut'
 
 if (!mongoUrl) {
   console.error(
@@ -34,20 +35,37 @@ export const mongoClient =
 
 if (!globalThis._pizzaHubMongoClient) {
   globalThis._pizzaHubMongoClient = mongoClient
-  // Connect once per server/runtime instance. MongoClient.connect() is safe to
-  // call before first operation; caching the promise avoids duplicate connects.
-  const connectPromise = mongoClient.connect().catch((error) => {
-    // Reset so future requests can retry instead of reusing a broken promise.
-    globalThis._pizzaHubMongoClientPromise = undefined
+}
+
+function connectMongoClient(client: MongoClient) {
+  const connectPromise = client.connect().catch((error) => {
+    // Reset so future requests can retry instead of reusing a rejected promise.
+    // Keep the same client instance because module exports already reference it.
+    if (globalThis._pizzaHubMongoClientPromise === connectPromise) {
+      globalThis._pizzaHubMongoClientPromise = undefined
+    }
     console.error('[mongodb] Failed to connect MongoClient', error)
     throw error
   })
+
   // Prevent unhandled rejection during module init/build; callers can still await.
   void connectPromise.catch(() => undefined)
-  globalThis._pizzaHubMongoClientPromise = connectPromise
+  return connectPromise
 }
 
-export const mongoClientPromise =
-  globalThis._pizzaHubMongoClientPromise ?? mongoClient.connect()
+export function getMongoClientPromise() {
+  if (!globalThis._pizzaHubMongoClientPromise) {
+    globalThis._pizzaHubMongoClientPromise = connectMongoClient(mongoClient)
+  }
 
-export const db = mongoClient.db(process.env.MONGO_DB_NAME || 'pizza-hut')
+  return globalThis._pizzaHubMongoClientPromise
+}
+
+export const mongoClientPromise = getMongoClientPromise()
+
+export const db = mongoClient.db(mongoDbName)
+
+export async function getMongoDb() {
+  const connectedClient = await getMongoClientPromise()
+  return connectedClient.db(mongoDbName)
+}
