@@ -8,6 +8,7 @@ import { Loader2, LogOut } from 'lucide-react'
 import { signOut } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { toast } from '@/lib/toast'
 
 type SignOutButtonProps = Omit<ComponentProps<typeof Button>, 'onClick'> & {
   /** Button text. Defaults to "Sign Out". */
@@ -46,24 +47,24 @@ export default function SignOutButton({
       const { error } = await signOut()
 
       if (error) {
-        setErrorMessage(
-          error.message || 'We could not sign you out. Please try again.'
-        )
+        const msg = error.message || 'We could not sign you out. Please try again.'
+        setErrorMessage(msg)
+        toast.error(msg)
         return
       }
 
+      toast.success('Logged out successfully.')
       onSignedOut?.()
 
       if (redirectTo && pathname !== redirectTo) {
         router.push(redirectTo)
       }
 
-      // Re-render server components so the navbar/account state is fresh.
       router.refresh()
     } catch {
-      setErrorMessage(
-        'We could not sign you out. Check your connection and try again.'
-      )
+      const msg = 'We could not sign you out. Check your connection and try again.'
+      setErrorMessage(msg)
+      toast.error(msg)
     } finally {
       setIsPending(false)
     }

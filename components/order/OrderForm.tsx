@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 import {
   CheckCircle2,
   Loader2,
@@ -113,30 +113,35 @@ export default function OrderForm({ pizza, user }: OrderFormProps) {
 
     try {
       setSubmitting(true)
-      const result = await createOrder({
-        menuItemId: pizza.id,
-        pizzaName: pizza.name,
-        pizzaImage: pizza.image,
-        category: pizza.category,
-        basePrice: pizza.price,
-        customerName: form.customerName.trim(),
-        customerEmail: form.customerEmail.trim(),
-        phone: form.phone.trim(),
-        deliveryAddress: form.deliveryAddress.trim(),
-        city: form.city.trim(),
-        area: form.area.trim(),
-        quantity: form.quantity,
-        size: form.size,
-        extraToppings: form.extraToppings,
-        specialInstructions: form.specialInstructions.trim(),
-      })
-
-      const orderId = String(result._id || result.id || '')
-      toast.success('Order placed successfully!')
-      router.push(orderId ? `/order/success?orderId=${encodeURIComponent(orderId)}` : '/order/success')
-      router.refresh()
-    } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to place order. Please try again.'))
+      await toast.promise(
+        createOrder({
+          menuItemId: pizza.id,
+          pizzaName: pizza.name,
+          pizzaImage: pizza.image,
+          category: pizza.category,
+          basePrice: pizza.price,
+          customerName: form.customerName.trim(),
+          customerEmail: form.customerEmail.trim(),
+          phone: form.phone.trim(),
+          deliveryAddress: form.deliveryAddress.trim(),
+          city: form.city.trim(),
+          area: form.area.trim(),
+          quantity: form.quantity,
+          size: form.size,
+          extraToppings: form.extraToppings,
+          specialInstructions: form.specialInstructions.trim(),
+        }),
+        {
+          loading: 'Placing your order...',
+          success: (result) => {
+            const orderId = String((result as { _id?: string; id?: string })._id || (result as { id?: string }).id || '')
+            router.push(orderId ? `/order/success?orderId=${encodeURIComponent(orderId)}` : '/order/success')
+            router.refresh()
+            return 'Order placed successfully!'
+          },
+          error: (err) => getErrorMessage(err, 'Failed to place order. Please try again.'),
+        }
+      )
     } finally {
       setSubmitting(false)
     }

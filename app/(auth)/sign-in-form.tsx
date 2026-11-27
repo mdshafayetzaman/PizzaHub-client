@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 
 import AuthToggle from './auth-toggle'
 import { authClient, signIn } from '@/lib/auth-client'
@@ -46,7 +46,7 @@ export default function SignInForm({ callbackUrl }: SignInFormProps) {
     try {
       const { error } = await signIn.social({
         provider: 'google',
-        callbackURL: hasExplicitCallback ? safeCallbackUrl : '/profile',
+        callbackURL: hasExplicitCallback ? safeCallbackUrl : '/?signed_in=google',
         errorCallbackURL: '/sign-in',
       })
       if (error) {
@@ -89,6 +89,7 @@ export default function SignInForm({ callbackUrl }: SignInFormProps) {
         return
       }
 
+      toast.success('Signed in successfully.')
       const target = await resolvePostAuthRedirect()
       router.push(target)
       router.refresh()

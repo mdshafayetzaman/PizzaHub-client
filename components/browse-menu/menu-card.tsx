@@ -4,7 +4,7 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Clock, Star, ArrowRight, ShoppingBag, Flame } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 
 import { useSession } from '@/lib/auth-client'
 import { useCart } from '@/lib/cart-context'
@@ -18,17 +18,13 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1513104890138-7c749659
 
 export default function MenuCard({ item }: MenuCardProps) {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: session, isPending } = useSession()
   const { addItem } = useCart()
   const [imgSrc, setImgSrc] = useState(item.image || FALLBACK_IMAGE)
 
   const handleViewDetails = () => {
-    const detailsPath = `/browse-menu/${item.id}`
-    if (!session?.user) {
-      router.push(`/sign-in?callbackUrl=${encodeURIComponent(detailsPath)}`)
-      return
-    }
-    router.push(detailsPath)
+    if (isPending) return
+    router.push(`/browse-menu/${item.id}`)
   }
 
   const handleAddToCart = () => {
@@ -41,6 +37,7 @@ export default function MenuCard({ item }: MenuCardProps) {
   }
 
   const handleOrderNow = () => {
+    if (isPending) return
     const orderPath = `/menu/${item.id}/order`
     if (!session?.user) {
       router.push(`/sign-in?callbackUrl=${encodeURIComponent(orderPath)}`)
@@ -126,7 +123,8 @@ export default function MenuCard({ item }: MenuCardProps) {
           <button
             type="button"
             onClick={handleViewDetails}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 text-sm font-bold text-white transition-all duration-300 hover:border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-300"
+            disabled={isPending}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 text-sm font-bold text-white transition-all duration-300 hover:border-orange-500/40 hover:bg-orange-500/10 hover:text-orange-300 disabled:opacity-60"
           >
             View Details
             <ArrowRight aria-hidden className="size-4" />
@@ -134,7 +132,7 @@ export default function MenuCard({ item }: MenuCardProps) {
           <button
             type="button"
             onClick={handleOrderNow}
-            disabled={!item.isAvailable}
+            disabled={!item.isAvailable || isPending}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-orange-500 px-4 text-sm font-bold text-white transition-all duration-300 hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Order Now

@@ -1,15 +1,20 @@
 import Link from "next/link";
 import { ArrowRight, Flame } from "lucide-react";
+import { Suspense } from "react";
 
 import HeroSection from "@/components/shared/hero-section";
 import MenuCard from "@/components/browse-menu/menu-card";
 import { MENU_ITEMS } from "@/lib/data";
+import AuthRedirectHandler from "@/components/shared/auth-redirect-handler";
 
 const HomePage = () => {
   const featuredItems = MENU_ITEMS.filter((item) => item.isAvailable).slice(0, 6);
 
   return (
     <main className="bg-[#11100F] text-white">
+      <Suspense fallback={null}>
+        <AuthRedirectHandler />
+      </Suspense>
       <HeroSection />
 
       <section className="relative isolate overflow-hidden px-5 py-16 sm:py-20 lg:px-8">

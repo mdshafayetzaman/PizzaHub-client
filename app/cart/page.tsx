@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Minus, Plus, ShoppingBag, Trash2, ArrowRight } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 
 import { useCart } from '@/lib/cart-context'
 import { formatPrice } from '@/lib/data'

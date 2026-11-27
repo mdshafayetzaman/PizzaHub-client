@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
+import { Toaster } from "sonner";
 import "./globals.css";
 import SiteChrome from "@/components/shared/site-chrome";
 
@@ -30,8 +31,29 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={null}>
           <SiteChrome>{children}</SiteChrome>
         </Suspense>
+        <Toaster
+          position="top-right"
+          richColors
+          theme="dark"
+          closeButton
+          toastOptions={{
+            classNames: {
+              toast:
+                "border border-white/10 bg-[#1A1917] text-white shadow-lg shadow-black/40",
+              title: "text-white font-semibold",
+              description: "text-neutral-300",
+              actionButton: "bg-orange-500 text-white hover:bg-orange-400",
+              cancelButton: "bg-white/10 text-white hover:bg-white/20",
+              success:
+                "border-orange-500/30 [&_[data-icon]]:text-orange-400",
+              error: "border-red-500/40 [&_[data-icon]]:text-red-400",
+              warning:
+                "border-amber-500/40 [&_[data-icon]]:text-amber-400",
+              info: "border-sky-500/40 [&_[data-icon]]:text-sky-400",
+            },
+          }}
+        />
       </body>
     </html>
   );
 }
-

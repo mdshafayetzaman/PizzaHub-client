@@ -1,11 +1,10 @@
 import Link from 'next/link'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { ChevronRight } from 'lucide-react'
 
 import MenuItemDetails from '@/components/browse-menu/menu-item-details'
 import { getMenuItem, type MenuItem } from '@/lib/data'
 import { getMenuItemById, getMenuImage, getMenuName } from '@/lib/api/menu'
-import { getCurrentUser } from '@/lib/session'
 
 type MenuDetailsPageProps = {
   params: Promise<{ id: string }>
@@ -52,12 +51,6 @@ export default async function MenuDetailsPage({
   params,
 }: MenuDetailsPageProps) {
   const { id } = await params
-  const user = await getCurrentUser()
-
-  if (!user) {
-    redirect(`/sign-in?callbackUrl=${encodeURIComponent(`/browse-menu/${id}`)}`)
-  }
-
   const item = await resolveMenuItem(id)
 
   if (!item) {
@@ -79,17 +72,27 @@ export default async function MenuDetailsPage({
                 href="/browse-menu"
                 className="text-neutral-400 transition hover:text-orange-500"
               >
-                Browse menu
+                Browse Menu
               </Link>
             </li>
-            <li aria-hidden className="text-neutral-600">
-              <ChevronRight className="size-4" />
+            <li>
+              <ChevronRight aria-hidden className="size-4 text-neutral-600" />
             </li>
-            <li className="text-white" aria-current="page">
+            <li className="max-w-[16rem] truncate text-white sm:max-w-none">
               {item.name}
             </li>
           </ol>
         </nav>
+
+        <div className="mb-10">
+          <p className="text-[11px] font-bold tracking-[0.22em] text-orange-400 uppercase">
+            Pizza details
+          </p>
+          <h1 className="mt-3 text-4xl font-black tracking-[-0.04em] sm:text-5xl lg:text-6xl">
+            Crafted for{' '}
+            <span className="text-orange-500">your cravings.</span>
+          </h1>
+        </div>
 
         <MenuItemDetails item={item} />
       </div>

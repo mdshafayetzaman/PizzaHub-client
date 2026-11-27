@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Pizza, PlusCircle, ImagePlus, Utensils, DollarSign, Tag, FileText, Sparkles, MapPin, Upload, Loader2 } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 
 import { createMenuItem } from '@/lib/api/menu'
 import { uploadImageToImgBB } from '@/lib/api/upload'
@@ -60,23 +60,29 @@ export default function AddMenuItemPage() {
 
     try {
       setIsLoading(true)
-      await createMenuItem({
-        pizzaName,
-        category,
-        description,
-        price,
-        location,
-        imageUrl: finalImageUrl,
-        preparationTime: String(formData.get('preparationTime') || '').trim() || undefined,
-        availableDate: String(formData.get('availableDate') || '').trim() || undefined,
-      })
-      toast.success(`${pizzaName} was submitted for approval.`)
-      form.reset()
-      setImageUrl('')
-      router.push('/dashboard/vendor/menu')
-      router.refresh()
-    } catch (e) {
-      toast.error(getErrorMessage(e, 'Failed to create menu item.'))
+      await toast.promise(
+        createMenuItem({
+          pizzaName,
+          category,
+          description,
+          price,
+          location,
+          imageUrl: finalImageUrl,
+          preparationTime: String(formData.get('preparationTime') || '').trim() || undefined,
+          availableDate: String(formData.get('availableDate') || '').trim() || undefined,
+        }),
+        {
+          loading: 'Submitting menu item...',
+          success: () => {
+            form.reset()
+            setImageUrl('')
+            router.push('/dashboard/vendor/menu')
+            router.refresh()
+            return `${pizzaName} was submitted for approval.`
+          },
+          error: (e) => getErrorMessage(e, 'Failed to create menu item.'),
+        }
+      )
     } finally {
       setIsLoading(false)
     }

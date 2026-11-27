@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { ShoppingBag, Clock3, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 
 import { StatCard } from '@/components/dashboard/StatCard'
 import { StatSkeleton, LoadingBlock } from '@/components/dashboard/LoadingBlock'

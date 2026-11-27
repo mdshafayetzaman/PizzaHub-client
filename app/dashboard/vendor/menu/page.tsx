@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { PlusCircle, Search, Pencil, Trash2, Eye, X, Loader2, Pizza, CheckCircle2 } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 
 import { LoadingBlock } from '@/components/dashboard/LoadingBlock'
 import { EmptyState } from '@/components/dashboard/EmptyState'

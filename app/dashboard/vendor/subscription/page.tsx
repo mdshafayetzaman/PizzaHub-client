@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { CheckCircle2, Crown, CreditCard, Loader2 } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 import { useSearchParams } from 'next/navigation'
 
 import { LoadingBlock } from '@/components/dashboard/LoadingBlock'

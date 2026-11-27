@@ -10,7 +10,7 @@ import {
   ShoppingBag,
   Star,
 } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 
 import { useCart } from '@/lib/cart-context'
 import { formatPrice, type MenuItem } from '@/lib/data'
@@ -48,7 +48,6 @@ export default function MenuItemDetails({
 
   return (
     <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-      {/* Image */}
       <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#1A1917]">
         <div className="relative aspect-[4/3] w-full">
           <Image
@@ -83,7 +82,6 @@ export default function MenuItemDetails({
         </div>
       </div>
 
-      {/* Details */}
       <div className="flex flex-col">
         <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-400">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
@@ -139,51 +137,40 @@ export default function MenuItemDetails({
           </div>
         </div>
 
-        <div className="mt-auto pt-8">
-          <div className="flex flex-col gap-4 rounded-3xl border border-white/10 bg-[#1A1917]/80 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-[11px] font-bold tracking-[0.16em] text-neutral-500 uppercase">
-                Price
-              </p>
-              <p className="mt-1 text-3xl font-black tracking-tight text-white">
-                {formatPrice(item.price)}
-              </p>
-            </div>
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-3xl font-black text-orange-400">{formatPrice(item.price)}</p>
+        </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="inline-flex items-center justify-between rounded-full border border-white/10 bg-white/[0.04] p-1">
-                <button
-                  type="button"
-                  onClick={handleDecrease}
-                  aria-label="Decrease quantity"
-                  className="inline-flex size-10 items-center justify-center rounded-full text-neutral-300 transition hover:bg-white/[0.08] hover:text-white"
-                >
-                  <Minus aria-hidden className="size-4" />
-                </button>
-                <span className="w-12 text-center text-sm font-bold text-white">
-                  {quantity}
-                </span>
-                <button
-                  type="button"
-                  onClick={handleIncrease}
-                  aria-label="Increase quantity"
-                  className="inline-flex size-10 items-center justify-center rounded-full text-neutral-300 transition hover:bg-white/[0.08] hover:text-white"
-                >
-                  <Plus aria-hidden className="size-4" />
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={!item.isAvailable}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-orange-500 px-7 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all duration-300 hover:-translate-y-0.5 hover:bg-orange-400 hover:shadow-orange-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
-              >
-                <ShoppingBag aria-hidden className="size-4.5" />
-                {item.isAvailable ? 'Add to cart' : 'Unavailable'}
-              </button>
-            </div>
+        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="inline-flex w-fit items-center rounded-full border border-white/10 bg-white/[0.04] p-1">
+            <button
+              type="button"
+              onClick={handleDecrease}
+              aria-label="Decrease quantity"
+              className="flex size-10 items-center justify-center rounded-full text-neutral-300 transition hover:bg-white/10 hover:text-white"
+            >
+              <Minus className="size-4" />
+            </button>
+            <span className="w-12 text-center text-lg font-bold text-white">{quantity}</span>
+            <button
+              type="button"
+              onClick={handleIncrease}
+              aria-label="Increase quantity"
+              className="flex size-10 items-center justify-center rounded-full text-neutral-300 transition hover:bg-white/10 hover:text-white"
+            >
+              <Plus className="size-4" />
+            </button>
           </div>
+
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={!item.isAvailable}
+            className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-orange-500 px-6 text-sm font-bold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-50 sm:max-w-xs"
+          >
+            <ShoppingBag className="size-4" />
+            Add to cart
+          </button>
         </div>
       </div>
     </div>

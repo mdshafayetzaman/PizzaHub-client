@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Save, Upload, User } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 
 import { useSession } from '@/lib/auth-client'
 import { updateProfile } from '@/lib/api/profile'

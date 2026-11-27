@@ -13,7 +13,7 @@ import {
   Store,
   User,
 } from 'lucide-react'
-import { toast } from 'react-toastify'
+import { toast } from '@/lib/toast'
 
 import AuthToggle from './auth-toggle'
 import { Button } from '@/components/ui/button'
@@ -49,7 +49,7 @@ export default function SignUpForm() {
     try {
       const { error } = await signIn.social({
         provider: 'google',
-        callbackURL: '/profile',
+        callbackURL: '/?signed_in=google',
         errorCallbackURL: '/sign-up',
       })
       if (error) {
@@ -105,6 +105,7 @@ export default function SignUpForm() {
         return
       }
 
+      toast.success('Account created successfully.')
       await redirectByRole()
     } catch {
       const message = 'Something went wrong. Please try again.'
