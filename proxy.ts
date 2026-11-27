@@ -20,25 +20,32 @@ export async function proxy(request: NextRequest) {
   const segment = match[1]
   const requestedRole = segment === 'customers' || segment === 'customer' ? 'customer' : (segment as 'admin' | 'vendor')
 
-  const session = await auth.api.getSession({ headers: request.headers })
-  const role = normalizeRole((session?.user as { role?: unknown } | undefined)?.role)
+  try {
+    const session = await auth.api.getSession({ headers: request.headers })
+    const role = normalizeRole((session?.user as { role?: unknown } | undefined)?.role)
 
-  if (!session) {
-    return NextResponse.redirect(new URL('/sign-in', request.url))
+    if (!session) {
+      return NextResponse.redirect(new URL('/sign-in', request.url))
+    }
+
+    // Redirect /dashboard/customer -> /dashboard/customers for canonical path compatibility.
+    if (segment === 'customer') {
+      const url = request.nextUrl.clone()
+      url.pathname = pathname.replace(/^\/dashboard\/customer/, '/dashboard/customers')
+      return NextResponse.redirect(url)
+    }
+
+    if (role !== 'admin' && role !== requestedRole) {
+      return NextResponse.redirect(new URL(ROLE_HOME[role], request.url))
+    }
+
+    return NextResponse.next()
+  } catch (error) {
+    console.error('Dashboard proxy auth error:', error)
+    const signInUrl = new URL('/sign-in', request.url)
+    signInUrl.searchParams.set('callbackUrl', pathname)
+    return NextResponse.redirect(signInUrl)
   }
-
-  // Redirect /dashboard/customer -> /dashboard/customers for canonical path compatibility.
-  if (segment === 'customer') {
-    const url = request.nextUrl.clone()
-    url.pathname = pathname.replace(/^\/dashboard\/customer/, '/dashboard/customers')
-    return NextResponse.redirect(url)
-  }
-
-  if (role !== 'admin' && role !== requestedRole) {
-    return NextResponse.redirect(new URL(ROLE_HOME[role], request.url))
-  }
-
-  return NextResponse.next()
 }
 
 export const config = {
